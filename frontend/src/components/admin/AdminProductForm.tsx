@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
-  ArrowLeft,
+
   Package, 
   DollarSign, 
   Image as ImageIcon, 
@@ -67,15 +67,15 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
     { id: 'dental', name: '덴탈껌', icon: '🦷' },
     { id: 'cookie', name: '쿠키/비스킷', icon: '🍪' },
   ];
-  const ageGroups = ['전연령', '퍼피', '성견', '노견'];
+  // const ageGroups = ['전연령', '퍼피', '성견', '노견'];
   const countries = ['한국', '미국', '캐나다', '뉴질랜드', '호주', '독일', '기타'];
-  
+
   const availableIngredients = [
     '닭가슴살', '소고기', '돼지고기', '오리고기', '연어', '참치',
     '고구마', '호박', '감자', '당근', '브로콜리',
     '글리세린', '천연향료', '비타민E', '타우린'
   ];
-  
+
   const availableBenefits = [
     '치아 건강', '소화 개선', '피부 개선', '관절 건강', '면역력 강화', '체중 관리'
   ];
@@ -88,14 +88,14 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
     }));
   };
 
-  const handleAgeGroupToggle = (age: string) => {
-    setFormData(prev => ({
-      ...prev,
-      ageGroup: prev.ageGroup.includes(age)
-        ? prev.ageGroup.filter(a => a !== age)
-        : [...prev.ageGroup, age],
-    }));
-  };
+  // const handleAgeGroupToggle = (age: string) => {
+  //   setFormData(prev => ({
+  //     ...prev,
+  //     ageGroup: prev.ageGroup.includes(age)
+  //       ? prev.ageGroup.filter(a => a !== age)
+  //       : [...prev.ageGroup, age],
+  //   }));
+  // };
 
   const handleBenefitToggle = (benefit: string) => {
     setFormData(prev => ({
@@ -139,7 +139,7 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
     if (!formData.size.trim()) newErrors.push('용량을 입력해주세요.');
     if (!formData.madeIn) newErrors.push('원산지를 선택해주세요.');
     if (!formData.stockQuantity || parseInt(formData.stockQuantity) < 0) newErrors.push('재고 수량을 입력해주세요.');
-    if (formData.ageGroup.length === 0) newErrors.push('적합 연령대를 최소 1개 선택해주세요.');
+    // if (formData.ageGroup.length === 0) newErrors.push('적합 연령대를 최소 1개 선택해주세요.');
     if (formData.ingredients.length === 0) newErrors.push('원재료를 최소 1개 추가해주세요.');
     if (formData.benefits.length === 0) newErrors.push('효능을 최소 1개 선택해주세요.');
 
@@ -157,11 +157,15 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (validateForm()) {
       // 실제 서버에 데이터를 보내는 로직을 여기에 추가하세요
-      // 예: fetch('/api/products', { method: 'POST', body: JSON.stringify(formData) });
-      console.log('제품 등록:', formData);
+      console.log(
+          '제품 등록 JSON:\n',
+          JSON.stringify(formData, null, 2)
+      );
+
+      fetch('/api/v1/products', { method: 'POST', body: JSON.stringify(formData) });
       router.push('/admin/products');
     }
   };
@@ -411,9 +415,9 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
               />
               {formData.imageUrl && (
                 <div className="mt-3 rounded-lg overflow-hidden border border-gray-200">
-                  <img 
-                    src={formData.imageUrl} 
-                    alt="미리보기" 
+                  <img
+                    src={formData.imageUrl}
+                    alt="미리보기"
                     className="w-full h-48 object-cover"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=이미지+로드+실패';
@@ -452,27 +456,27 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
               </div>
 
               {/* 적합 연령대 */}
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">
-                  적합 연령대 <span className="text-red-500">*</span>
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {ageGroups.map(age => (
-                    <button
-                      key={age}
-                      type="button"
-                      onClick={() => handleAgeGroupToggle(age)}
-                      className={`px-4 py-2 rounded-lg border transition-colors ${
-                        formData.ageGroup.includes(age)
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
-                      }`}
-                    >
-                      {age}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {/*<div>*/}
+              {/*  <label className="block text-sm text-gray-700 mb-2">*/}
+              {/*    적합 연령대 <span className="text-red-500">*</span>*/}
+              {/*  </label>*/}
+              {/*  <div className="flex flex-wrap gap-2">*/}
+              {/*    {ageGroups.map(age => (*/}
+              {/*      <button*/}
+              {/*        key={age}*/}
+              {/*        type="button"*/}
+              {/*        onClick={() => handleAgeGroupToggle(age)}*/}
+              {/*        className={`px-4 py-2 rounded-lg border transition-colors ${*/}
+              {/*          formData.ageGroup.includes(age)*/}
+              {/*            ? 'bg-blue-600 text-white border-blue-600'*/}
+              {/*            : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'*/}
+              {/*        }`}*/}
+              {/*      >*/}
+              {/*        {age}*/}
+              {/*      </button>*/}
+              {/*    ))}*/}
+              {/*  </div>*/}
+              {/*</div>*/}
             </div>
           </section>
 
