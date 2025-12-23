@@ -27,6 +27,5 @@ public class Ingredients {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "products_id", nullable = false)
     private Products products;
-}
 
 }

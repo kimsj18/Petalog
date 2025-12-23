@@ -18,7 +18,7 @@ import java.time.LocalDate;
 public class User {
 
     @Id
-    @Column(name = "user_id", length = 25, nullable = false)
+    @Column(name = "user_id", length = 50, nullable = false)
     private String userId;
 
     @Column(name = "user_email", length = 50, nullable = false)
@@ -30,10 +30,10 @@ public class User {
     @Column(name = "user_phone", length = 15, nullable = false)
     private String userPhone;
 
-    @Column(name = "user_oauth_provider", length = 20, nullable = false)
+    @Column(name = "user_oauth_provider", length = 20)
     private String userOauthProvider;
 
-    @Column(name = "user_oauth_id", length = 20, nullable = false)
+    @Column(name = "user_oauth_id", length = 20)
     private String userOauthId;
 
     @Column(name = "user_enter_day", nullable = false)
@@ -47,6 +47,9 @@ public class User {
 
     @Column(name = "user_password")
     private String userPassword;
+
+    @Column(name = "user_role", nullable = false)
+    private String userRole;
 
 
 

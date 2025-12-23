@@ -1,6 +1,7 @@
-package com.example.demo.domain.oAuth;
+package com.example.demo.vo.enums;
 
 public enum MemberRole {
 
-    USER,ADMIN;
+    USER,
+    ADMIN;
 }

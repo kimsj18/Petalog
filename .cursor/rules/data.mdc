@@ -1,0 +1,148 @@
+
+연결할 db야 이거 참고해서 프론트 폼 작성해줘
+
+CREATE TABLE `product_benefit` (
+	`benefit_id`	VARCHAR(25)	NOT NULL,
+	`products_id`	VARCHAR(25)	NOT NULL,
+	`benefit_name`	VARCHAR(50)	NOT NULL
+);
+
+CREATE TABLE `products` (
+	`products_id`	VARCHAR(25)	NOT NULL,
+	`name`	VARCHAR(25)	NOT NULL,
+	`brand`	VARCHAR(25)	NOT NULL,
+	`category`	VARCHAR(25)	NOT NULL	COMMENT '간식,사료,영양제 등',
+	`snack_type`	VARCHAR(25)	NOT NULL	COMMENT '트릿,육포,껌, 등',
+	`imageUrl`	LONGTEXT	NOT NULL,
+	`size`	int	NOT NULL,
+	`madein`	VARCHAR(25)	NOT NULL
+);
+
+CREATE TABLE `order_item` (
+	`order_item_id`	VARCHAR(25)	NOT NULL,
+	`quantity`	int	NOT NULL,
+	`price`	int	NOT NULL,
+	`products_id`	VARCHAR(25)	NOT NULL,
+	`orders_id`	VARCHAR(25)	NOT NULL
+);
+
+CREATE TABLE `jwt_refresh_token` (
+	`jwt_id`	BIGINT	NOT NULL	COMMENT '토큰 id',
+	`refresh_token`	LONGTEXT	NOT NULL	COMMENT '리프레시 토큰',
+	`created_at`	DATETIME	NOT NULL	COMMENT '리프레시 토큰 생성일'
+);
+
+CREATE TABLE `pets` (
+	`pets_id`	VARCHAR(25)	NOT NULL,
+	`pets_name`	VARCHAR(25)	NOT NULL,
+	`pets_birth`	DATE	NULL,
+	`pets_weight`	int	NULL,
+	`user_id`	VARCHAR(25)	NOT NULL,
+	`pets_snack_type`	VARCHAR(25)	NULL,
+	`pets_ingredients`	VARCHAR(25)	NULL
+);
+
+CREATE TABLE `ingredients` (
+	`ingredients_id`	VARCHAR(25)	NOT NULL,
+	`products_id`	VARCHAR(25)	NOT NULL,
+	`ingredients_name`	VARCHAR(10)	NOT NULL	COMMENT '닭,소 등',
+	`ingredients_percentage`	int	NOT NULL
+);
+
+CREATE TABLE `review` (
+	`id`	VARCHAR(25)	NOT NULL,
+	`title`	VARCHAR(30)	NOT NULL,
+	`content`	VARCHAR(100)	NOT NULL,
+	`score`	int	NOT NULL,
+	`products_id`	VARCHAR(25)	NOT NULL,
+	`user_id`	VARCHAR(25)	NOT NULL
+);
+
+CREATE TABLE `user` (
+	`user_id`	VARCHAR(25)	NOT NULL,
+	`user_email`	VARCHAR(50)	NOT NULL,
+	`user_name`	VARCHAR(15)	NOT NULL,
+	`user_phone`	VARCHAR(15)	NOT NULL,
+	`user_oauth_provider`	VARCHAR(20)	NULL	COMMENT 'google, kakao 등',
+	`user_oauth_id`	VARCHAR(20)	NULL,
+	`user_enter_day`	DATE	NOT NULL,
+	`user_status`	INTEGER	NOT NULL	DEFAULT 1	COMMENT '회원탈퇴시 0으로 변경',
+	`user_exit_day`	DATE	NULL,
+	`user_password`	VARCHAR(20)	NULL
+);
+
+CREATE TABLE `user_address` (
+	`address_id`	VARCHAR(25)	NOT NULL,
+	`user_id`	VARCHAR(25)	NOT NULL,
+	`recipient_name`	VARCHAR(20)	NOT NULL,
+	`recipient_phone`	VARCHAR(15)	NOT NULL,
+	`zipcode`	VARCHAR(10)	NOT NULL,
+	`address1`	VARCHAR(100)	NOT NULL,
+	`address2`	VARCHAR(100)	NULL,
+	`is_default`	BOOLEAN	NOT NULL	DEFAULT false,
+	`created_at`	DATETIME	NOT NULL
+);
+
+CREATE TABLE `carts` (
+	`cart_id`	VARCHAR(25)	NOT NULL,
+	`quantity`	int	NOT NULL	DEFAULT 1,
+	`products_id`	VARCHAR(25)	NOT NULL,
+	`user_id`	VARCHAR(25)	NOT NULL
+);
+
+CREATE TABLE `orders` (
+	`orders_id`	VARCHAR(25)	NOT NULL,
+	`user_id`	VARCHAR(25)	NOT NULL,
+	`recipient_name`	VARCHAR(20)	NOT NULL,
+	`recipient_phone`	VARCHAR(15)	NOT NULL,
+	`zipcode`	VARCHAR(10)	NOT NULL,
+	`address1`	VARCHAR(100)	NOT NULL,
+	`address2`	VARCHAR(100)	NULL,
+	`created_at`	DATETIME	NOT NULL
+);
+
+ALTER TABLE `product_benefit` ADD CONSTRAINT `PK_PRODUCT_BENEFIT` PRIMARY KEY (
+	`benefit_id`
+);
+
+ALTER TABLE `products` ADD CONSTRAINT `PK_PRODUCTS` PRIMARY KEY (
+	`products_id`
+);
+
+ALTER TABLE `order_item` ADD CONSTRAINT `PK_ORDER_ITEM` PRIMARY KEY (
+	`order_item_id`
+);
+
+ALTER TABLE `jwt_refresh_token` ADD CONSTRAINT `PK_JWT_REFRESH_TOKEN` PRIMARY KEY (
+	`jwt_id`
+);
+
+ALTER TABLE `pets` ADD CONSTRAINT `PK_PETS` PRIMARY KEY (
+	`pets_id`
+);
+
+ALTER TABLE `ingredients` ADD CONSTRAINT `PK_INGREDIENTS` PRIMARY KEY (
+	`ingredients_id`
+);
+
+ALTER TABLE `review` ADD CONSTRAINT `PK_REVIEW` PRIMARY KEY (
+	`id`
+);
+
+ALTER TABLE `user` ADD CONSTRAINT `PK_USER` PRIMARY KEY (
+	`user_id`
+);
+
+ALTER TABLE `user_address` ADD CONSTRAINT `PK_USER_ADDRESS` PRIMARY KEY (
+	`address_id`
+);
+
+ALTER TABLE `carts` ADD CONSTRAINT `PK_CARTS` PRIMARY KEY (
+	`cart_id`
+);
+
+ALTER TABLE `orders` ADD CONSTRAINT `PK_ORDERS` PRIMARY KEY (
+	`orders_id`
+);
+
+
