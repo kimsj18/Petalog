@@ -118,7 +118,7 @@ export function PopularComparisons({ onSelectProducts }: PopularComparisonsProps
           originalPrice: 28000,
           rating: 4.7,
           reviewCount: 623,
-          image: 'https://images.unsplash.com/photo-1604544203292-0daa7f847478?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjB0cmVhdHMlMjBzbmFja3N8ZW58MXx8fHwxNzY1ODU2MTY3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
+          image: 'https://search.pstatic.net/common/?src=http%3A%2F%2Fshop1.phinf.naver.net%2F20231228_129%2F1703731370287c4JGR_JPEG%2F31034053804689016_791276966.jpg&type=sc960_832',
           ingredients: ['연어 90%', '고구마', '크랜베리'],
           benefits: ['피부/모질 개선', '소화 개선'],
           ageGroup: ['전연령'],
@@ -126,6 +126,7 @@ export function PopularComparisons({ onSelectProducts }: PopularComparisonsProps
           madeIn: '캐나다',
           bestFor: ['소형견', '중형견', '대형견'],
         },
+
         {
           id: '6',
           name: '오리고기 육포',

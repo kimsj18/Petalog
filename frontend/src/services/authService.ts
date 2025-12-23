@@ -3,17 +3,20 @@
 import { apiClient, ApiResponse } from '@/lib/api';
 import { User } from '@/types';
 
-// 로그인 요청
+// 로그인 요청 (백엔드 Spring Security formLogin 사용)
 export interface LoginRequest {
-  user_email: string;
-  user_password: string;
+  username: string; // user_email
+  password: string; // user_password
 }
 
-// 로그인 응답
+// 로그인 응답 (백엔드가 반환하는 claims Map)
 export interface LoginResponse {
+  email: string;
+  password: string;
+  name: string;
+  userRole: string;
   accessToken: string;
   refreshToken: string;
-  user: User;
 }
 
 // 회원가입 요청
@@ -32,6 +35,12 @@ export interface OAuthLoginRequest {
   name: string;
 }
 
+// 토큰 갱신 응답
+export interface RefreshTokenResponse {
+  accessToken: string;
+  refreshToken: string;
+}
+
 // ========================================
 // Auth API
 // ========================================
@@ -39,10 +48,20 @@ export interface OAuthLoginRequest {
 export const authService = {
   /**
    * 일반 로그인
-   * POST /auth/login
+   * POST /api/v1/login (Spring Security formLogin)
+   * 백엔드가 claims Map을 직접 반환: { email, password, name, userRole, accessToken, refreshToken }
    */
   async login(data: LoginRequest): Promise<ApiResponse<LoginResponse>> {
-    const response = await apiClient.post<LoginResponse>('/auth/login', data);
+    // Spring Security formLogin은 form data를 사용하지만, JSON도 가능하도록 시도
+    const formData = new URLSearchParams();
+    formData.append('username', data.username);
+    formData.append('password', data.password);
+    
+    const response = await apiClient.post<LoginResponse>(
+      '/v1/login',
+      formData.toString(),
+      true // isFormData
+    );
     
     // 로그인 성공 시 토큰 저장
     if (response.success && response.data) {
@@ -54,10 +73,12 @@ export const authService = {
 
   /**
    * OAuth 로그인 (Google, Kakao)
-   * POST /auth/oauth/login
+   * TODO: 백엔드에 OAuth 엔드포인트가 구현되면 수정 필요
+   * POST /api/v1/oauth/login
    */
   async oauthLogin(data: OAuthLoginRequest): Promise<ApiResponse<LoginResponse>> {
-    const response = await apiClient.post<LoginResponse>('/auth/oauth/login', data);
+    // TODO: 백엔드 OAuth API 구현 후 수정
+    const response = await apiClient.post<LoginResponse>('/v1/oauth/login', data);
     
     if (response.success && response.data) {
       apiClient.setToken(response.data.accessToken);
@@ -68,31 +89,37 @@ export const authService = {
 
   /**
    * 회원가입
-   * POST /auth/register
+   * TODO: 백엔드에 회원가입 엔드포인트가 구현되면 수정 필요
+   * POST /api/v1/register
    */
   async register(data: RegisterRequest): Promise<ApiResponse<{ user_id: string }>> {
-    return apiClient.post<{ user_id: string }>('/auth/register', data);
+    return apiClient.post<{ user_id: string }>('/v1/register', data);
   },
 
   /**
    * 로그아웃
-   * POST /auth/logout
+   * 백엔드에 별도 로그아웃 엔드포인트가 없을 수 있음 (클라이언트에서 토큰 제거)
    */
   async logout(): Promise<ApiResponse<void>> {
-    const response = await apiClient.post<void>('/auth/logout');
+    // 백엔드에 로그아웃 API가 있다면 호출
+    // const response = await apiClient.post<void>('/v1/logout');
     
     // 토큰 제거
     apiClient.clearToken();
     
-    return response;
+    return {
+      success: true,
+    };
   },
 
   /**
    * 토큰 갱신
-   * POST /auth/refresh
+   * POST /api/v1/refresh
+   * Authorization 헤더에 Bearer 토큰 필요
+   * Body: { refreshToken: string }
    */
-  async refreshToken(refreshToken: string): Promise<ApiResponse<{ accessToken: string }>> {
-    const response = await apiClient.post<{ accessToken: string }>('/auth/refresh', {
+  async refreshToken(refreshToken: string): Promise<ApiResponse<RefreshTokenResponse>> {
+    const response = await apiClient.post<RefreshTokenResponse>('/v1/refresh', {
       refreshToken,
     });
     
@@ -105,10 +132,13 @@ export const authService = {
 
   /**
    * 내 정보 조회
-   * GET /auth/me
+   * TODO: 백엔드에 사용자 정보 조회 엔드포인트가 구현되면 수정 필요
+   * GET /api/v1/me
    */
   async getMe(): Promise<ApiResponse<User>> {
-    return apiClient.get<User>('/auth/me');
+    // JWT 토큰에서 사용자 정보를 추출하거나 별도 API 호출
+    // 현재는 토큰에서 정보를 추출하는 방식이 필요할 수 있음
+    return apiClient.get<User>('/v1/me');
   },
 
   /**

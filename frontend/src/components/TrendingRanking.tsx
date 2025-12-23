@@ -360,7 +360,7 @@ export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
           <ChevronRight className="size-4" />
         </button>
       </div>
-      </div>
+    </div>
     </Container>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -12,17 +12,15 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { Container } from "./Container";
+import { useAuthStore } from "@/stores/authStore";
+import { useCartItemCount } from "@/stores/cartStore";
 
-interface HeaderProps {
-  user?: { email: string } | null;
-  onLogout?: () => void;
-  cartItemCount?: number;
-}
-
-export function Header({ user, onLogout, cartItemCount = 0 }: HeaderProps = {}) {
+export function Header() {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { user, isAuthenticated, logout } = useAuthStore();
+  const cartItemCount = useCartItemCount();
 
   const handleLogoClick = () => {
     router.push('/');
@@ -34,6 +32,11 @@ export function Header({ user, onLogout, cartItemCount = 0 }: HeaderProps = {}) 
 
   const handleLoginClick = () => {
     router.push('/login');
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/');
   };
 
   return (
@@ -116,20 +119,29 @@ export function Header({ user, onLogout, cartItemCount = 0 }: HeaderProps = {}) 
             >
               리뷰
             </a>
-            {user && (
+            {isAuthenticated && user && (
               <div className="border-t border-gray-200 py-2">
                 <div className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg">
                   <User className="size-5" />
-                  <span>{user.email}</span>
+                  <span>{user.user_email}</span>
                 </div>
                 <button
                   className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
-                  onClick={onLogout}
+                  onClick={handleLogout}
                 >
                   <LogOut className="size-5" />
                   로그아웃
                 </button>
               </div>
+            )}
+            {!isAuthenticated && (
+              <button
+                className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
+                onClick={handleLoginClick}
+              >
+                <User className="size-5" />
+                로그인
+              </button>
             )}
           </nav>
         )}

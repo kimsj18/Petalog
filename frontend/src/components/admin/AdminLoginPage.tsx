@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Mail, Lock, AlertCircle, ArrowLeft, Shield } from 'lucide-react';
+import {useRouter} from "next/navigation";
 
 interface AdminLoginPageProps {
   onLogin: (email: string) => void;
@@ -13,6 +14,7 @@ export function AdminLoginPage({ onLogin, onSwitchToUserLogin }: AdminLoginPageP
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter()
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +53,8 @@ export function AdminLoginPage({ onLogin, onSwitchToUserLogin }: AdminLoginPageP
     setTimeout(() => {
       if (email === 'admin@dogsnack.com' && password === 'admin123') {
         console.log('관리자 로그인 성공:', email);
-        onLogin(email);
+        // onLogin(email);
+        router.push('/admin');
       } else {
         setError('이메일 또는 비밀번호가 올바르지 않습니다.');
       }

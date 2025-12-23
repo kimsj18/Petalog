@@ -45,23 +45,23 @@ export default function HomePage() {
         <AllergyComparison />
         <SnackTypeComparison />
         
-        {/*<section className="max-w-6xl mx-auto px-4 py-16">*/}
-        {/*  <div className="flex gap-8">*/}
-        {/*    <FilterSidebar */}
-        {/*      filters={filters}*/}
-        {/*      onFiltersChange={setFilters}*/}
-        {/*    />*/}
-        {/*    <div className="flex-1">*/}
-        {/*      <ProductGrid */}
-        {/*        onSelectProduct={handleSelectProduct}*/}
-        {/*        selectedProducts={selectedProducts}*/}
-        {/*        showAll={showAllProducts}*/}
-        {/*        onToggleShowAll={() => setShowAllProducts(!showAllProducts)}*/}
-        {/*        filters={filters}*/}
-        {/*      />*/}
-        {/*    </div>*/}
-        {/*  </div>*/}
-        {/*</section>*/}
+        <section className="max-w-6xl mx-auto px-4 py-16">
+          <div className="flex gap-8">
+            <FilterSidebar
+              filters={filters}
+              onFiltersChange={setFilters}
+            />
+            <div className="flex-1">
+              <ProductGrid
+                onSelectProduct={handleSelectProduct}
+                selectedProducts={selectedProducts}
+                showAll={showAllProducts}
+                onToggleShowAll={() => setShowAllProducts(!showAllProducts)}
+                filters={filters}
+              />
+            </div>
+          </div>
+        </section>
 
         {selectedProducts.length >= 2 && (
           <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">

@@ -83,7 +83,7 @@ export function CheckoutPage({ totalAmount, itemCount, onBack, onPaymentSuccess 
             <ArrowLeft className="size-6" />
           </button>
           <h1 className="text-gray-900">주문/결제</h1>
-          </div>
+        </div>
         </Container>
       </div>
 
@@ -266,7 +266,7 @@ export function CheckoutPage({ totalAmount, itemCount, onBack, onPaymentSuccess 
             <li>• 제품 수령 후 7일 이내 반품 가능합니다</li>
           </ul>
         </div>
-        </div>
+      </div>
       </Container>
     </div>
   );

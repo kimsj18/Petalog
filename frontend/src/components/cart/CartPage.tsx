@@ -1,50 +1,40 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Minus, Plus, Trash2, ShoppingCart } from 'lucide-react';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { Container } from '../common/Container';
-
-export interface CartItem {
-  id: string;
-  name: string;
-  brand: string;
-  price: number;
-  image: string;
-  quantity: number;
-}
+import { useCartStore } from '@/stores/cartStore';
+import { CartItem } from '@/types';
 
 export function CartPage() {
   const router = useRouter();
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    // TODO: API 호출로 변경
-    // const response = await cartService.getCart();
-    // setCartItems(response.data);
-  ]);
+  const { items: cartItems, isLoading, loadCart, updateQuantity, removeItem } = useCartStore();
+
+  useEffect(() => {
+    loadCart();
+  }, [loadCart]);
 
   const handleBack = () => {
     router.back();
   };
 
-  const handleUpdateQuantity = (id: string, newQuantity: number) => {
+  const handleUpdateQuantity = async (id: string, newQuantity: number) => {
     if (newQuantity < 1) return;
-    
-    // TODO: API 호출
-    // await cartService.updateCartQuantity(id, newQuantity);
-    
-    setCartItems(items =>
-      items.map(item =>
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      )
-    );
+    try {
+      await updateQuantity(id, newQuantity);
+    } catch (error: any) {
+      alert(error.message || '수량 변경에 실패했습니다.');
+    }
   };
 
-  const handleRemoveItem = (id: string) => {
-    // TODO: API 호출
-    // await cartService.removeFromCart(id);
-    
-    setCartItems(items => items.filter(item => item.id !== id));
+  const handleRemoveItem = async (id: string) => {
+    try {
+      await removeItem(id);
+    } catch (error: any) {
+      alert(error.message || '삭제에 실패했습니다.');
+    }
   };
 
   const handleCheckout = () => {
@@ -65,13 +55,17 @@ export function CartPage() {
             <ArrowLeft className="size-6" />
           </button>
           <h1 className="text-gray-900">장바구니</h1>
-          </div>
+        </div>
         </Container>
       </div>
 
       <Container size="narrow">
         <div className="py-6">
-        {cartItems.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-20">
+            <p className="text-gray-500">장바구니를 불러오는 중...</p>
+          </div>
+        ) : cartItems.length === 0 ? (
           <div className="text-center py-20">
             <ShoppingCart className="size-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 mb-4">장바구니가 비어있습니다</p>
@@ -183,7 +177,7 @@ export function CartPage() {
             </div>
           </>
         )}
-        </div>
+      </div>
       </Container>
     </div>
   );

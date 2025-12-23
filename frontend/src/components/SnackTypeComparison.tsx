@@ -27,7 +27,7 @@ export function SnackTypeComparison({ onProductClick }: SnackTypeComparisonProps
         brand: '네츄럴코어',
         price: 18900,
         size: '200g',
-        image: 'https://images.unsplash.com/photo-1604544203292-0daa7f847478?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjB0cmVhdHMlMjBzbmFja3N8ZW58MXx8fHwxNzY1ODU2MTY3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
+        image: 'https://search.pstatic.net/common/?src=http%3A%2F%2Fshop1.phinf.naver.net%2F20231228_129%2F1703731370287c4JGR_JPEG%2F31034053804689016_791276966.jpg&type=sc960_832',
         features: ['작은 크기', '훈련��� 최적', '휴대 간편'],
         rating: 4.8,
         bestFor: '훈련, 외출',

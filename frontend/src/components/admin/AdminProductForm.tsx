@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiClient } from '@/lib/api';
 import { 
 
   Package, 
@@ -16,6 +17,17 @@ import {
   Plus
 } from 'lucide-react';
 
+interface Ingredient {
+  id: string;
+  name: string;
+  percentage: string;
+}
+
+interface ImageFile {
+  file: File;
+  preview: string;
+}
+
 interface ProductFormData {
   name: string;
   brand: string;
@@ -27,8 +39,8 @@ interface ProductFormData {
   ageGroup: string[];
   madeIn: string;
   stockQuantity: string;
-  imageUrl: string;
-  ingredients: Array<{ id: string; name: string; percentage: string }>;
+  images: ImageFile[];
+  ingredients: Ingredient[];
   benefits: string[];
 }
 
@@ -50,13 +62,63 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
     ageGroup: [],
     madeIn: '',
     stockQuantity: '',
-    imageUrl: '',
+    images: [],
     ingredients: [],
     benefits: [],
   });
 
   const [errors, setErrors] = useState<string[]>([]);
   const [isPreview, setIsPreview] = useState(false);
+
+  // 이미지 파일 처리 함수
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const imageFiles: File[] = Array.from(files).filter(file => file.type.startsWith('image/'));
+    
+    if (imageFiles.length === 0) {
+      setErrors(prev => [...prev, '이미지 파일만 업로드 가능합니다.']);
+      return;
+    }
+
+    // 현재 이미지 개수 확인
+    const remainingSlots = 3 - formData.images.length;
+    const filesToAdd = imageFiles.slice(0, remainingSlots);
+
+    if (filesToAdd.length < imageFiles.length) {
+      setErrors(prev => [...prev, `최대 3개까지만 업로드 가능합니다. ${filesToAdd.length}개만 추가됩니다.`]);
+    }
+
+    // 모든 파일을 Promise로 변환하여 동시에 처리
+    const imagePromises = filesToAdd.map((file) => {
+      return new Promise<ImageFile>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const preview = reader.result as string;
+          resolve({ file, preview });
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    const newImages = await Promise.all(imagePromises);
+    
+    setFormData(prev => ({
+      ...prev,
+      images: [...prev.images, ...newImages].slice(0, 3),
+    }));
+
+    // input 초기화 (같은 파일을 다시 선택할 수 있도록)
+    e.target.value = '';
+  };
+
+  const removeImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, idx) => idx !== index),
+    }));
+  };
 
   // 드롭다운 옵션들
   const brands = ['네츄럴코어', '오리젠', '그리니스', '덴티베이트', '하림펫푸드', '기타'];
@@ -69,13 +131,13 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
   ];
   // const ageGroups = ['전연령', '퍼피', '성견', '노견'];
   const countries = ['한국', '미국', '캐나다', '뉴질랜드', '호주', '독일', '기타'];
-
+  
   const availableIngredients = [
     '닭가슴살', '소고기', '돼지고기', '오리고기', '연어', '참치',
     '고구마', '호박', '감자', '당근', '브로콜리',
     '글리세린', '천연향료', '비타민E', '타우린'
   ];
-
+  
   const availableBenefits = [
     '치아 건강', '소화 개선', '피부 개선', '관절 건강', '면역력 강화', '체중 관리'
   ];
@@ -121,12 +183,22 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
   };
 
   const updateIngredient = (id: string, field: 'name' | 'percentage', value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      ingredients: prev.ingredients.map(ing =>
+    setFormData(prev => {
+      const updatedIngredients = prev.ingredients.map(ing =>
         ing.id === id ? { ...ing, [field]: value } : ing
-      ),
-    }));
+      );
+      
+      // 비율 합계 검증
+      const totalPercentage = updatedIngredients.reduce((sum, ing) => {
+        const percentage = parseFloat(ing.percentage) || 0;
+        return sum + percentage;
+      }, 0);
+      
+      return {
+        ...prev,
+        ingredients: updatedIngredients,
+      };
+    });
   };
 
   const validateForm = (): boolean => {
@@ -140,33 +212,71 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
     if (!formData.madeIn) newErrors.push('원산지를 선택해주세요.');
     if (!formData.stockQuantity || parseInt(formData.stockQuantity) < 0) newErrors.push('재고 수량을 입력해주세요.');
     // if (formData.ageGroup.length === 0) newErrors.push('적합 연령대를 최소 1개 선택해주세요.');
+    if (formData.images.length === 0) newErrors.push('이미지를 최소 1개 업로드해주세요.');
     if (formData.ingredients.length === 0) newErrors.push('원재료를 최소 1개 추가해주세요.');
     if (formData.benefits.length === 0) newErrors.push('효능을 최소 1개 선택해주세요.');
 
     // 원재료 검증
-    formData.ingredients.forEach((ing, idx ) => {
+    formData.ingredients.forEach((ing, idx) => {
       if (!ing.name) newErrors.push(`${idx + 1}번째 원재료명을 입력해주세요.`);
       if (ing.percentage && (parseFloat(ing.percentage) < 0 || parseFloat(ing.percentage) > 100)) {
         newErrors.push(`${idx + 1}번째 원재료 비율은 0-100 사이여야 합니다.`);
       }
     });
 
+    // 원재료 비율 합계 검증
+    const totalPercentage = formData.ingredients.reduce((sum, ing) => {
+      const percentage = parseFloat(ing.percentage) || 0;
+      return sum + percentage;
+    }, 0);
+    
+    if (totalPercentage > 100) {
+      newErrors.push(`원재료 비율의 합계가 100%를 초과할 수 없습니다. (현재: ${totalPercentage.toFixed(1)}%)`);
+    }
+
     setErrors(newErrors);
     return newErrors.length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     if (validateForm()) {
-      // 실제 서버에 데이터를 보내는 로직을 여기에 추가하세요
-      console.log(
-          '제품 등록 JSON:\n',
-          JSON.stringify(formData, null, 2)
-      );
+      // FormData로 이미지 파일과 함께 전송
+      const submitData = new FormData();
+      
+      // 기본 정보 추가
+      submitData.append('name', formData.name);
+      submitData.append('brand', formData.brand);
+      submitData.append('category', formData.category);
+      submitData.append('description', formData.description);
+      submitData.append('price', formData.price);
+      submitData.append('size', formData.size);
+      submitData.append('madeIn', formData.madeIn);
+      submitData.append('stockQuantity', formData.stockQuantity);
+      
+      // 이미지 파일 추가
+      formData.images.forEach((image, index) => {
+        submitData.append(`images`, image.file);
+      });
+      
+      // 원재료 추가
+      submitData.append('ingredients', JSON.stringify(formData.ingredients));
+      
+      // 효능 추가
+      submitData.append('benefits', JSON.stringify(formData.benefits));
 
-      fetch('/api/v1/products', { method: 'POST', body: JSON.stringify(formData) });
-      router.push('/admin/products');
+      try {
+        const response = await apiClient.post<{ id: string }>('/v1/admin/products/new', submitData);
+
+        if (response.success) {
+          router.push('/admin/products');
+        } else {
+          setErrors([response.error || '제품 등록에 실패했습니다. 다시 시도해주세요.']);
+        }
+      } catch (error) {
+        setErrors(['제품 등록 중 오류가 발생했습니다.']);
+      }
     }
   };
 
@@ -191,7 +301,7 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
         ageGroup: ['전연령', '퍼피'],
         madeIn: '한국',
         stockQuantity: '100',
-        imageUrl: 'https://example.com/image.jpg',
+        images: [],
         ingredients: [
           { id: '1', name: '닭가슴살', percentage: '50' },
           { id: '2', name: '고구마', percentage: '30' },
@@ -397,33 +507,49 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
           <section>
             <h2 className="text-lg text-gray-900 mb-4 flex items-center gap-2">
               <ImageIcon className="size-5 text-blue-600" />
-              제품 이미지
+              제품 이미지 (최대 3개)
             </h2>
 
-            <div>
-              <label htmlFor="imageUrl" className="block text-sm text-gray-700 mb-2">
-                이미지 URL
-              </label>
-              <input
-                id="imageUrl"
-                name="imageUrl"
-                type="text"
-                value={formData.imageUrl}
-                onChange={handleChange}
-                placeholder="https://example.com/image.jpg"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              {formData.imageUrl && (
-                <div className="mt-3 rounded-lg overflow-hidden border border-gray-200">
-                  <img
-                    src={formData.imageUrl}
-                    alt="미리보기"
-                    className="w-full h-48 object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=이미지+로드+실패';
-                    }}
-                  />
+            <div className="space-y-3">
+              {formData.images.map((image, idx) => (
+                <div key={idx} className="space-y-2">
+                  <div className="flex gap-2">
+                    <div className="flex-1 px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 text-sm flex items-center">
+                      {image.file.name}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeImage(idx)}
+                      className="p-3 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <X className="size-5" />
+                    </button>
+                  </div>
+                  <div className="rounded-lg overflow-hidden border border-gray-200">
+                    <img 
+                      src={image.preview} 
+                      alt={`미리보기 ${idx + 1}`} 
+                      className="w-full h-48 object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=이미지+로드+실패';
+                      }}
+                    />
+                  </div>
                 </div>
+              ))}
+
+              {formData.images.length < 3 && (
+                <label className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                  <Plus className="size-5" />
+                  이미지 추가 ({formData.images.length}/3)
+                </label>
               )}
             </div>
           </section>
@@ -488,38 +614,78 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
             </h2>
 
             <div className="space-y-3">
-              {formData.ingredients.map((ingredient, idx) => (
-                <div key={ingredient.id} className="flex gap-2">
-                  <div className="flex-1">
-                    <select
-                      value={ingredient.name}
-                      onChange={(e) => updateIngredient(ingredient.id, 'name', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">원재료 선택</option>
-                      {availableIngredients.map(ing => (
-                        <option key={ing} value={ing}>{ing}</option>
-                      ))}
-                    </select>
+              {formData.ingredients.map((ingredient, idx) => {
+                const currentTotal = formData.ingredients.reduce((sum, ing) => {
+                  const percentage = parseFloat(ing.percentage) || 0;
+                  return sum + percentage;
+                }, 0);
+                const currentPercentage = parseFloat(ingredient.percentage) || 0;
+                const otherTotal = currentTotal - currentPercentage;
+                const maxAllowed = 100 - otherTotal;
+                
+                return (
+                  <div key={ingredient.id} className="space-y-1">
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <select
+                          value={ingredient.name}
+                          onChange={(e) => updateIngredient(ingredient.id, 'name', e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">원재료 선택</option>
+                          {availableIngredients.map(ing => (
+                            <option key={ing} value={ing}>{ing}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="w-28">
+                        <input
+                          type="number"
+                          value={ingredient.percentage}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const numValue = parseFloat(value);
+                            if (value === '' || (!isNaN(numValue) && numValue >= 0 && numValue <= maxAllowed)) {
+                              updateIngredient(ingredient.id, 'percentage', value);
+                            }
+                          }}
+                          placeholder="비율(%)"
+                          max={maxAllowed}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeIngredient(ingredient.id)}
+                        className="p-3 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <X className="size-5" />
+                      </button>
+                    </div>
+                    {maxAllowed < 100 && (
+                      <p className="text-xs text-gray-500 ml-1">
+                        최대 {maxAllowed.toFixed(1)}%까지 입력 가능 (현재 합계: {otherTotal.toFixed(1)}%)
+                      </p>
+                    )}
                   </div>
-                  <div className="w-28">
-                    <input
-                      type="number"
-                      value={ingredient.percentage}
-                      onChange={(e) => updateIngredient(ingredient.id, 'percentage', e.target.value)}
-                      placeholder="비율(%)"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                );
+              })}
+              
+              {formData.ingredients.length > 0 && (() => {
+                const total = formData.ingredients.reduce((sum, ing) => {
+                  const percentage = parseFloat(ing.percentage) || 0;
+                  return sum + percentage;
+                }, 0);
+                return (
+                  <div className={`p-3 rounded-lg ${total > 100 ? 'bg-red-50 border border-red-200' : total === 100 ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-200'}`}>
+                    <p className={`text-sm ${total > 100 ? 'text-red-700' : total === 100 ? 'text-green-700' : 'text-gray-600'}`}>
+                      원재료 비율 합계: <strong>{total.toFixed(1)}%</strong>
+                      {total > 100 && <span className="ml-2">⚠️ 100%를 초과했습니다</span>}
+                      {total === 100 && <span className="ml-2">✓ 완벽합니다</span>}
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => removeIngredient(ingredient.id)}
-                    className="p-3 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <X className="size-5" />
-                  </button>
-                </div>
-              ))}
+                );
+              })()}
 
               <button
                 type="button"
@@ -591,12 +757,20 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
                   </button>
                 </div>
 
-                {formData.imageUrl && (
-                  <img 
-                    src={formData.imageUrl} 
-                    alt={formData.name}
-                    className="w-full h-48 object-cover rounded-lg mb-4"
-                  />
+                {formData.images.length > 0 && (
+                  <div className="space-y-2 mb-4">
+                    {formData.images.map((image, idx) => (
+                      <img 
+                        key={idx}
+                        src={image.preview} 
+                        alt={`${formData.name} ${idx + 1}`}
+                        className="w-full h-48 object-cover rounded-lg"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=이미지+로드+실패';
+                        }}
+                      />
+                    ))}
+                  </div>
                 )}
 
                 <div className="space-y-3">
@@ -634,11 +808,23 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
                       <p className="text-sm text-gray-700 mb-2">원재료:</p>
                       <div className="space-y-1">
                         {formData.ingredients.map((ing, idx) => (
-                          <p key={idx} className="text-sm text-gray-600">
+                          <p key={ing.id} className="text-sm text-gray-600">
                             • {ing.name} {ing.percentage && `(${ing.percentage}%)`}
                           </p>
                         ))}
                       </div>
+                      {(() => {
+                        const total = formData.ingredients.reduce((sum, ing) => {
+                          const percentage = parseFloat(ing.percentage) || 0;
+                          return sum + percentage;
+                        }, 0);
+                        return total > 0 && (
+                          <p className="text-sm text-gray-500 mt-2">
+                            총 비율: {total.toFixed(1)}%
+                            {total > 100 && <span className="text-red-500 ml-2">(100% 초과)</span>}
+                          </p>
+                        );
+                      })()}
                     </div>
                   )}
 
