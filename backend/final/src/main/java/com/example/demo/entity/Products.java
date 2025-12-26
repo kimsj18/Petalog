@@ -32,8 +32,14 @@ public class Products {
     @Column(name = "price", nullable = false)
     private int price;
 
+    @Column(name = "description", nullable = false, length = 100)
+    private String description;
+
     @Column(name = "snack_type", nullable = false, length = 25)
     private String snackType;
+
+    @Column(name = "quantity", nullable = false)
+    private int quantity;
 
     @Column(name = "image_url", columnDefinition = "LONGTEXT", nullable = false)
     private String imageUrl;

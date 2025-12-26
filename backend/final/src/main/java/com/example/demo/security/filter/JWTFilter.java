@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,7 +35,6 @@ public class JWTFilter extends OncePerRequestFilter {
         if(path.startsWith("/api/v1/refresh")){
             return true;
         }
-        // 체크한다.
 
         return false;
     }
@@ -52,8 +52,15 @@ public class JWTFilter extends OncePerRequestFilter {
 
 
         log.info("--------------------");
+        String path = request.getRequestURI();
 
+        // ⭐ 이미지 요청은 JWT 검사 안 함
+        if (path.startsWith("/uploads/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         String authHeaderStr = request.getHeader("Authorization");
+
 
         // Bearer //7 JWT문자열
         try {
@@ -76,6 +83,11 @@ public class JWTFilter extends OncePerRequestFilter {
                     new UsernamePasswordAuthenticationToken(email, null, authorities);
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            // 확인
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            log.info("authorities = {}", auth.getAuthorities());
+
 
             filterChain.doFilter(request, response);
         }catch (Exception e){

@@ -50,6 +50,14 @@ public class CustomSecurityConfig {
             config.failureHandler(new LoginFailHandler());
         });
 
+        // 정적 리소스 경로 허용 추가
+        http.authorizeHttpRequests(auth -> {
+            auth.requestMatchers("/uploads/**").permitAll();
+            auth.requestMatchers("/api/v1/refresh").permitAll(); // 리프레시 토큰 엔드포인트 허용
+            auth.requestMatchers("/api/v1/login").permitAll(); // 로그인 엔드포인트도 명시적으로 허
+            auth.anyRequest().authenticated();
+        });
+
         http.addFilterBefore(new JWTFilter(), UsernamePasswordAuthenticationFilter.class);
 
         http.exceptionHandling(httpSecurityExceptionHandlingConfigurer ->

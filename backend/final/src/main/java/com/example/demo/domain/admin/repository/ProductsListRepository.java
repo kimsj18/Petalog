@@ -8,13 +8,7 @@ import java.util.List;
 
 public interface ProductsListRepository extends JpaRepository<Products, String > {
 
-    @Query("""
-    select distinct p
-    from Products p
-    left join fetch p.ingredients
-    left join fetch p.benefits
-    
-""")
-    List<Products> findAllWithAll();
+
+    List<Products> findAllBy();
 
 }
