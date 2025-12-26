@@ -23,8 +23,13 @@ export function UserLoginPage() {
         username: email, // 백엔드는 username 필드 사용
         password: password,
       });
-      
-      router.push('/');
+
+      const userRole = useAuthStore.getState().user?.userRole;
+      if(userRole === "USER"){
+        router.push("/")
+      }else{
+        router.push("/admin")
+      }
     } catch (error: any) {
       alert(error.message || '로그인에 실패했습니다.');
     }

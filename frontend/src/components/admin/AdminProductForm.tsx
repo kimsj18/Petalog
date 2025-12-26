@@ -35,6 +35,7 @@ interface ProductFormData {
   description: string;
   price: string;
   originalPrice: string;
+  quantity: string;
   size: string;
   ageGroup: string[];
   madeIn: string;
@@ -42,6 +43,31 @@ interface ProductFormData {
   images: ImageFile[];
   ingredients: Ingredient[];
   benefits: string[];
+}
+
+interface IngredientDTO {
+  name: string;
+  percentage: number;
+}
+
+interface BenefitDTO {
+  name: string;
+}
+
+interface ProductDetailDTO {
+  productsId: string;
+  name: string;
+  brand: string;
+  category: string;
+  snackType: string;
+  imageUrl: string;
+  quantity: number;
+  madeIn: string;
+  size: number;
+  price: number;
+  description: string;
+  ingredientDTOs: IngredientDTO[];
+  benefitDTOs: BenefitDTO[];
 }
 
 interface AdminProductFormProps {
@@ -58,6 +84,7 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
     description: '',
     price: '',
     originalPrice: '',
+    quantity:'',
     size: '',
     ageGroup: [],
     madeIn: '',
@@ -69,6 +96,7 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
 
   const [errors, setErrors] = useState<string[]>([]);
   const [isPreview, setIsPreview] = useState(false);
+  const [loading, setLoading] = useState(mode === 'edit');
 
   // 이미지 파일 처리 함수
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -252,12 +280,18 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
       submitData.append('description', formData.description);
       submitData.append('price', formData.price);
       submitData.append('size', formData.size);
+      submitData.append('quantity', formData.quantity)
       submitData.append('madeIn', formData.madeIn);
       submitData.append('stockQuantity', formData.stockQuantity);
       
-      // 이미지 파일 추가
-      formData.images.forEach((image, index) => {
-        submitData.append(`images`, image.file);
+      // 이미지 파일 추가 (새로 추가된 파일만)
+      formData.images.forEach((image) => {
+        // File 객체이고 실제 파일인 경우만 추가 (기존 이미지 URL은 제외)
+        // preview가 data URL이거나 file.name이 있는 경우는 새로 추가된 파일
+        if (image.file && image.file instanceof File && 
+            (image.file.size > 0 || image.preview.startsWith('data:'))) {
+          submitData.append(`images`, image.file);
+        }
       });
       
       // 원재료 추가
@@ -267,15 +301,45 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
       submitData.append('benefits', JSON.stringify(formData.benefits));
 
       try {
-        const response = await apiClient.post<{ id: string }>('/v1/admin/products/new', submitData);
+        // 수정 모드일 때 productsId와 기존 이미지 URL 추가
+        if (mode === 'edit' && productId) {
+          submitData.append('productsId', productId);
+
+          // 기존 이미지 URL들 추출하여 전송
+          const existingImageUrls: string[] = [];
+          formData.images.forEach((image) => {
+            // 새로 추가된 파일이 아닌 경우 (기존 이미지 URL)
+            // preview가 http:// 또는 https:// 또는 /uploads/로 시작하면 기존 이미지
+            if (image.preview &&
+                !image.preview.startsWith('data:') &&
+                (image.preview.startsWith('http') || image.preview.startsWith('/uploads'))) {
+              existingImageUrls.push(image.preview);
+            }
+          });
+
+          // 기존 이미지 URL들을 콤마로 구분하여 전송
+          if (existingImageUrls.length > 0) {
+            submitData.append('imageUrl', existingImageUrls.join(','));
+          }
+        }
+
+        let response;
+        if (mode === 'edit' && productId) {
+          // 수정 모드: 현재는 수정 API가 없으므로 생성 API 재사용
+          // TODO: 백엔드에 수정 API 추가 후 PUT 요청으로 변경
+          response = await apiClient.post<{ id: string }>(`/v1/admin/products/${productId}/edit`, submitData);
+        } else {
+          // 생성 모드
+          response = await apiClient.post<{ id: string }>('/v1/admin/products/new', submitData);
+        }
 
         if (response.success) {
           router.push('/admin/products');
         } else {
-          setErrors([response.error || '제품 등록에 실패했습니다. 다시 시도해주세요.']);
+          setErrors([response.error || `제품 ${mode === 'edit' ? '수정' : '등록'}에 실패했습니다. 다시 시도해주세요.`]);
         }
       } catch (error) {
-        setErrors(['제품 등록 중 오류가 발생했습니다.']);
+        setErrors([`제품 ${mode === 'edit' ? '수정' : '등록'} 중 오류가 발생했습니다.`]);
       }
     }
   };
@@ -288,29 +352,80 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
 
   useEffect(() => {
     if (mode === 'edit' && productId) {
-      // 실제 서버에서 데이터를 가져오는 로직을 여기에 추가하세요
-      // 예: fetch(`/api/products/${productId}`).then(res => res.json()).then(data => setFormData(data));
-      const sampleData: ProductFormData = {
-        name: '프리미엄 닭가슴살 큐브',
-        brand: '네츄럴코어',
-        category: 'treat',
-        description: '강아지에게 좋은 닭가슴살 큐브',
-        price: '15000',
-        originalPrice: '20000',
-        size: '200g',
-        ageGroup: ['전연령', '퍼피'],
-        madeIn: '한국',
-        stockQuantity: '100',
-        images: [],
-        ingredients: [
-          { id: '1', name: '닭가슴살', percentage: '50' },
-          { id: '2', name: '고구마', percentage: '30' },
-        ],
-        benefits: ['치아 건강', '소화 개선'],
+      const fetchProduct = async () => {
+        try {
+          setLoading(true);
+          setErrors([]);
+          
+          // 전체 상품 목록에서 해당 상품 찾기
+          const response = await apiClient.get<ProductDetailDTO[]>('/v1/admin/products');
+          
+          if (response.success && response.data) {
+            const product = response.data.find(p => p.productsId === productId);
+            
+            if (product) {
+              // 이미지 URL 처리
+              const imageUrls = product.imageUrl ? product.imageUrl.split(',').map(url => url.trim()).filter(url => url) : [];
+              const imageFiles: ImageFile[] = [];
+              
+              // 기존 이미지 URL을 ImageFile 형식으로 변환
+              // 실제 File 객체는 없지만 preview로 URL 사용
+              for (const url of imageUrls) {
+                if (url) {
+                  // URL을 그대로 preview로 사용 (File 객체는 빈 파일로 생성)
+                  imageFiles.push({ 
+                    file: new File([], url.split('/').pop() || 'image.png', { type: 'image/png' }), 
+                    preview: url 
+                  });
+                }
+              }
+              
+              setFormData({
+                name: product.name || '',
+                brand: product.brand || '',
+                category: product.category || '',
+                description: product.description || '',
+                price: product.price?.toString() || '',
+                originalPrice: '',
+                quantity:product.quantity?.toString() || '',
+                size: product.size?.toString() || '',
+                ageGroup: [],
+                madeIn: product.madeIn || '',
+                stockQuantity: '0', // DB에 재고 정보가 없으면 기본값
+                images: imageFiles,
+                ingredients: product.ingredientDTOs?.map((ing, idx) => ({
+                  id: Date.now().toString() + idx,
+                  name: ing.name || '',
+                  percentage: ing.percentage?.toString() || '',
+                })) || [],
+                benefits: product.benefitDTOs?.map(ben => ben.name) || [],
+              });
+            } else {
+              setErrors(['상품을 찾을 수 없습니다.']);
+            }
+          } else {
+            setErrors(['상품 정보를 불러오는데 실패했습니다.']);
+          }
+        } catch (error) {
+          console.error('상품 조회 실패:', error);
+          setErrors(['상품 정보를 불러오는 중 오류가 발생했습니다.']);
+        } finally {
+          setLoading(false);
+        }
       };
-      setFormData(sampleData);
+      
+      fetchProduct();
     }
   }, [mode, productId]);
+
+  // 로딩 중 표시
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">상품 정보를 불러오는 중...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -320,7 +435,7 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Package className="size-6" />
-              <h1 className="text-xl">제품 등록</h1>
+              <h1 className="text-xl">{mode === 'edit' ? '제품 수정' : '제품 등록'}</h1>
             </div>
             <button
               onClick={() => router.push('/admin/products')}
@@ -329,7 +444,9 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
               <X className="size-5" />
             </button>
           </div>
-          <p className="text-blue-100 text-sm">새로운 강아지 간식 제품을 등록합니다</p>
+          <p className="text-blue-100 text-sm">
+            {mode === 'edit' ? '강아지 간식 제품 정보를 수정합니다' : '새로운 강아지 간식 제품을 등록합니다'}
+          </p>
         </div>
 
         {/* 에러 메시지 */}
@@ -487,14 +604,14 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
               </div>
 
               <div>
-                <label htmlFor="stockQuantity" className="block text-sm text-gray-700 mb-2">
+                <label htmlFor="quantity" className="block text-sm text-gray-700 mb-2">
                   재고 수량 <span className="text-red-500">*</span>
                 </label>
                 <input
-                  id="stockQuantity"
-                  name="stockQuantity"
+                  id="quantity"
+                  name="quantity"
                   type="number"
-                  value={formData.stockQuantity}
+                  value={formData.quantity}
                   onChange={handleChange}
                   placeholder="100"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -515,7 +632,7 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
                 <div key={idx} className="space-y-2">
                   <div className="flex gap-2">
                     <div className="flex-1 px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 text-sm flex items-center">
-                      {image.file.name}
+                      {image.file.name || '기존 이미지'}
                     </div>
                     <button
                       type="button"
@@ -737,7 +854,7 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
               className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
             >
               <CheckCircle className="size-5" />
-              등록하기
+              {mode === 'edit' ? '수정하기' : '등록하기'}
             </button>
           </div>
         </form>

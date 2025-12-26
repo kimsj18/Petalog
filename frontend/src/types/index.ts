@@ -10,8 +10,8 @@ export interface Product {
   category: string; // 간식, 사료, 영양제 등
   snack_type: string; // 트릿, 육포, 껌 등
   imageUrl: string;
+  quantity: number;
   price?: number; // DB에는 없지만 프론트엔드에서 필요
-  originalPrice?: number;
   rating?: number;
   reviewCount?: number;
   // 관계 데이터 (JOIN 결과)
@@ -54,6 +54,7 @@ export interface User {
   user_status: number; // 1: 활성, 0: 탈퇴
   user_exit_day?: string; // DATE
   user_password?: string;
+  userRole?:string
 }
 
 // ========================================

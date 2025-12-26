@@ -51,6 +51,7 @@ export const useAuthStore = create<AuthState>()(
               user_enter_day: new Date().toISOString().split('T')[0],
               user_status: 1,
               user_exit_day: undefined,
+              userRole: userRole,
             };
             
             set({
@@ -90,6 +91,7 @@ export const useAuthStore = create<AuthState>()(
               user_enter_day: new Date().toISOString().split('T')[0],
               user_status: 1,
               user_exit_day: undefined,
+              userRole: userRole,
             };
             
             set({
@@ -131,39 +133,46 @@ export const useAuthStore = create<AuthState>()(
       },
 
       checkAuth: async () => {
-        const { accessToken } = get();
-        
+        const { accessToken, refreshToken } = get();
+
         if (!accessToken) {
+          // 액세스 토큰이 없으면 리프레시 토큰도 확인
+          if (refreshToken) {
+            // 리프레시 토큰이 있으면 갱신 시도
+            const refreshed = await get().refreshAccessToken();
+            if (refreshed) {
+              return; // 갱신 성공
+            }
+          }
           set({ isAuthenticated: false, user: null });
           return;
         }
 
         set({ isLoading: true });
         try {
-          // API 클라이언트에 토큰 설정 (localStorage에서 복원된 경우)
+          // API 클라이언트에 토큰 설정
           apiClient.setToken(accessToken);
-          
-          // TODO: 백엔드에 사용자 정보 조회 API가 구현되면 사용
-          // 현재는 토큰이 있으면 인증된 것으로 간주
-          // const response = await authService.getMe();
-          // if (response.success && response.data) {
-          //   set({
-          //     user: response.data,
-          //     isAuthenticated: true,
-          //     isLoading: false,
-          //   });
-          // } else {
-          //   get().logout();
-          // }
-          
-          // 임시: 토큰이 있으면 인증된 것으로 간주
+
+          // 토큰 만료 여부 확인을 위해 간단한 API 호출 시도
+          // 또는 JWT 토큰의 exp를 파싱해서 확인
+          // 여기서는 간단하게 토큰이 있으면 인증된 것으로 간주
+          // 실제 API 요청 시 401이 발생하면 자동으로 리프레시 토큰으로 갱신됨
+
           set({
             isAuthenticated: true,
             isLoading: false,
           });
         } catch (error) {
           console.error('Auth check error:', error);
-          get().logout();
+          // 에러 발생 시 리프레시 토큰으로 갱신 시도
+          if (refreshToken) {
+            const refreshed = await get().refreshAccessToken();
+            if (!refreshed) {
+              get().logout();
+            }
+          } else {
+            get().logout();
+          }
         }
       },
 

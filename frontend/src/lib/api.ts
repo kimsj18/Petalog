@@ -24,15 +24,56 @@ class ApiClient {
     
     // 클라이언트 사이드에서만 실행
     if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('accessToken');
+      // auth-storage에서 토큰 읽기
+      this.token = this.getTokenFromStorage();
     }
+  }
+
+  // auth-storage에서 accessToken 가져오기
+  private getTokenFromStorage(): string | null {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    
+    try {
+      const authStorage = localStorage.getItem('auth-storage');
+      if (authStorage) {
+        const parsed = JSON.parse(authStorage);
+        return parsed.state?.accessToken || null;
+      }
+    } catch (error) {
+      console.error('Failed to get token from storage:', error);
+    }
+    
+    // 하위 호환성을 위해 기존 방식도 확인
+    return localStorage.getItem('accessToken');
   }
 
   // 토큰 설정
   setToken(token: string) {
     this.token = token;
     if (typeof window !== 'undefined') {
-      localStorage.setItem('accessToken', token);
+      // auth-storage에 저장
+      try {
+        const authStorage = localStorage.getItem('auth-storage');
+        if (authStorage) {
+          const parsed = JSON.parse(authStorage);
+          parsed.state = {
+            ...parsed.state,
+            accessToken: token,
+          };
+          localStorage.setItem('auth-storage', JSON.stringify(parsed));
+        } else {
+          // auth-storage가 없으면 새로 생성
+          localStorage.setItem('auth-storage', JSON.stringify({
+            state: { accessToken: token }
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to set token in auth-storage:', error);
+        // 실패 시 기존 방식으로 저장 (하위 호환성)
+        localStorage.setItem('accessToken', token);
+      }
     }
   }
 
@@ -92,9 +133,11 @@ class ApiClient {
 
   // 토큰 갱신
   private async refreshAccessToken(): Promise<boolean> {
-    console.log("리프레시토큰 갱신 : ")
+    console.log("리프레시토큰 갱신 시작");
+    
     // 이미 갱신 중이면 기존 Promise 반환
     if (this.isRefreshing && this.refreshPromise) {
+      console.log("이미 리프레시 토큰 갱신 중...");
       return this.refreshPromise;
     }
 
@@ -102,31 +145,87 @@ class ApiClient {
     this.refreshPromise = (async () => {
       try {
         const refreshToken = this.getRefreshToken();
-        console.log("리프레시토큰 겟 : {}", refreshToken)
+        console.log("리프레시토큰 확인:", refreshToken ? "존재함" : "없음");
+        
         if (!refreshToken) {
-          console.warn('No refresh token available');
+          console.warn('리프레시 토큰이 없습니다. 로그아웃 처리합니다.');
+          // 리프레시 토큰이 없으면 로그아웃 처리
+          if (typeof window !== 'undefined') {
+            try {
+              const { useAuthStore } = await import('@/stores/authStore');
+              await useAuthStore.getState().logout();
+            } catch (error) {
+              console.warn('로그아웃 처리 실패:', error);
+            }
+          }
+          this.clearToken();
           return false;
         }
 
         // refresh 엔드포인트는 재시도하지 않도록 별도 처리
+        // 최신 토큰 가져오기
+        const currentToken = this.getTokenFromStorage() || this.token || '';
         const response = await fetch(`${this.baseURL}/v1/refresh`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.token || ''}`,
+            'Authorization': `Bearer ${currentToken}`,
           },
           body: JSON.stringify({ refreshToken }),
           credentials: 'include',
         });
 
+        console.log("리프레시 토큰 응답 상태:", response.status);
+
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error('Token refresh failed:', errorData);
+          // 응답이 JSON인지 확인
+          const contentType = response.headers.get('content-type');
+          let errorData = {};
+          
+          if (contentType && contentType.includes('application/json')) {
+            try {
+              errorData = await response.json();
+            } catch (e) {
+              console.error('JSON 파싱 실패:', e);
+            }
+          }
+          
+          console.error('토큰 갱신 실패:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData
+          });
+          
+          // 401 또는 403 에러면 리프레시 토큰도 만료된 것
+          if (response.status === 401 || response.status === 403) {
+            console.warn('리프레시 토큰도 만료되었습니다. 로그아웃 처리합니다.');
+            if (typeof window !== 'undefined') {
+              try {
+                const { useAuthStore } = await import('@/stores/authStore');
+                await useAuthStore.getState().logout();
+              } catch (error) {
+                console.warn('로그아웃 처리 실패:', error);
+              }
+            }
+          }
+          
+          this.clearToken();
+          return false;
+        }
+
+        // 응답이 JSON인지 확인
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error('리프레시 토큰 응답이 JSON이 아닙니다:', contentType);
           this.clearToken();
           return false;
         }
 
         const data = await response.json();
+        console.log("리프레시 토큰 갱신 성공:", {
+          hasAccessToken: !!data.accessToken,
+          hasRefreshToken: !!data.refreshToken
+        });
         
         if (data.accessToken && data.refreshToken) {
           this.setToken(data.accessToken);
@@ -141,17 +240,19 @@ class ApiClient {
                 accessToken: data.accessToken,
                 refreshToken: data.refreshToken,
               });
+              console.log("authStore 업데이트 완료");
             } catch (error) {
-              console.warn('Failed to update authStore:', error);
+              console.warn('authStore 업데이트 실패:', error);
             }
           }
           
           return true;
         }
         
+        console.error('리프레시 토큰 응답에 accessToken 또는 refreshToken이 없습니다:', data);
         return false;
       } catch (error) {
-        console.error('Token refresh error:', error);
+        console.error('토큰 갱신 중 오류 발생:', error);
         this.clearToken();
         return false;
       } finally {
@@ -185,19 +286,22 @@ class ApiClient {
     
     // 401 에러이고 아직 재시도하지 않은 경우
     if (is401Error && retryCount === 0) {
+      console.log(`401 에러 감지: ${endpoint}, 리프레시 토큰으로 갱신 시도...`);
       const refreshed = await this.refreshAccessToken();
       
       if (refreshed) {
+        console.log(`토큰 갱신 성공, 요청 재시도: ${endpoint}`);
         // 토큰 갱신 성공 시 원래 요청 재시도 (재시도 카운트 증가)
         return this.handle401Error(endpoint, requestFn, retryCount + 1);
       } else {
+        console.error(`토큰 갱신 실패: ${endpoint}`);
         // 토큰 갱신 실패 시 로그아웃 처리
         if (typeof window !== 'undefined') {
           try {
             const { useAuthStore } = await import('@/stores/authStore');
             await useAuthStore.getState().logout();
           } catch (error) {
-            console.warn('Failed to logout:', error);
+            console.warn('로그아웃 처리 실패:', error);
           }
         }
         
@@ -212,13 +316,40 @@ class ApiClient {
   }
 
   // 공통 헤더
+  // private getHeaders(): HeadersInit {
+  //   const headers: HeadersInit = {
+  //     'Content-Type': 'application/json',
+  //   };
+  //
+  //   if (this.token) {
+  //     headers['Authorization'] = `Bearer ${this.token}`;
+  //   }
+  //
+  //   return headers;
+  // }
+  // 공통 헤더
   private getHeaders(): HeadersInit {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    // 매번 auth-storage에서 최신 토큰을 가져옴
+    let token = this.token;
+    if (typeof window !== 'undefined') {
+      const storedToken = this.getTokenFromStorage();
+      if (storedToken) {
+        token = storedToken;
+        // 메모리와 동기화
+        if (this.token !== storedToken) {
+          this.token = storedToken;
+        }
+      }
+    }
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    } else {
+      console.warn('[API] Authorization 헤더에 토큰이 없습니다.');
     }
 
     return headers;
@@ -315,8 +446,10 @@ class ApiClient {
         }
 
         // Authorization 헤더 추가 (FormData인 경우에도)
-        if (this.token) {
-          headers['Authorization'] = `Bearer ${this.token}`;
+        // getHeaders()에서 가져온 토큰 사용
+        const token = this.getTokenFromStorage();
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
         }
 
         const response = await fetch(`${this.baseURL}${endpoint}`, {
