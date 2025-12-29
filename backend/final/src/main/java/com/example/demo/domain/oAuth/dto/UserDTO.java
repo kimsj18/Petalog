@@ -9,6 +9,7 @@ import java.util.*;
 
 public class UserDTO extends User {
 
+    private String userId;
     private String email;
     private String password;
     private String name;
@@ -40,6 +41,7 @@ public class UserDTO extends User {
         this.userOauthProvider = userOauthProvider;
         this.userOauthId = userOauthId;
         this.userRole = userRole;
+        this.userId = userId;
     }
 
     public Map<String, Object> getClaims() {
@@ -50,7 +52,12 @@ public class UserDTO extends User {
         dataMap.put("password", password);
         dataMap.put("name", name);
         dataMap.put("userRole", userRole);
+        dataMap.put("userId", userId);
 
         return dataMap;
+    }
+
+    public String getUserId() {
+        return userId;
     }
 }

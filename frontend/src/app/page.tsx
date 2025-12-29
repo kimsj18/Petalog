@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Header } from '../components/common/Header';
 import { Hero } from '../components/Hero';
 import { TrendingRanking } from '../components/TrendingRanking';
@@ -12,6 +13,7 @@ import { FilterSidebar } from '../components/FilterSidebar';
 import { Product, ProductFilters } from '../types';
 
 export default function HomePage() {
+  const router = useRouter();
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
   const [showComparison, setShowComparison] = useState(false);
   const [showAllProducts, setShowAllProducts] = useState(false);
@@ -36,14 +38,18 @@ export default function HomePage() {
     }
   };
 
+  const handleProductClick = (product: Product) => {
+    router.push(`/products/${product.products_id}`);
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <Header />
       <main>
         {/*<Hero />*/}
-        <TrendingRanking />
-        <AllergyComparison />
-        <SnackTypeComparison />
+        <TrendingRanking onProductClick={handleProductClick} />
+        <AllergyComparison onProductClick={handleProductClick} />
+        <SnackTypeComparison onProductClick={handleProductClick} />
         
         <section className="max-w-6xl mx-auto px-4 py-16">
           <div className="flex gap-8">

@@ -15,7 +15,7 @@ interface ProductCardProps {
 export function ProductCard({ product, isSelected, onSelect }: ProductCardProps) {
   const router = useRouter();
 
-  const discountRate = product.originalPrice
+  const discountRate = product.originalPrice && product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
@@ -55,20 +55,20 @@ export function ProductCard({ product, isSelected, onSelect }: ProductCardProps)
         <div className="flex items-center gap-2 mb-3">
           <div className="flex items-center gap-1">
             <Star className="size-4 fill-yellow-400 text-yellow-400" />
-            <span className="text-gray-900">{product.rating}</span>
+            <span className="text-gray-900">{product.rating ?? 0}</span>
           </div>
           <span className="text-sm text-gray-500">
-            ({product.reviewCount.toLocaleString()})
+            ({(product.reviewCount ?? 0).toLocaleString()})
           </span>
         </div>
 
         <div className="flex flex-wrap gap-1 mb-3">
-          {product.benefits.slice(0, 2).map(benefit => (
+          {product.benefits?.slice(0, 2).map(benefit => (
             <span
-              key={benefit}
+              key={benefit.benefit_id}
               className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded"
             >
-              {benefit}
+              {benefit.benefit_name}
             </span>
           ))}
         </div>
@@ -80,7 +80,7 @@ export function ProductCard({ product, isSelected, onSelect }: ProductCardProps)
             </span>
           )}
           <span className="text-gray-900">
-            {product.price.toLocaleString()}원
+            {(product.price ?? 0).toLocaleString()}원
           </span>
         </div>
 

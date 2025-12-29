@@ -1,8 +1,5 @@
 package com.example.demo.domain.admin.service;
 
-import com.example.demo.domain.admin.dto.BenefitDTO;
-import com.example.demo.domain.admin.dto.IngredientDTO;
-import com.example.demo.domain.admin.dto.ProductDetailDTO;
 import com.example.demo.domain.admin.dto.ProductNewDto;
 import com.example.demo.domain.admin.repository.IngredientsRepository;
 import com.example.demo.domain.admin.repository.ProductBenefitRepository;
@@ -84,63 +81,6 @@ public class AdminProductService {
         }
     }
 
-    @Transactional
-    public void updateProduct(ProductDetailDTO dto, List<MultipartFile> images) {
-        try {
-            // 1. 기존 상품 조회
-            Products product = productsRepository.findById(dto.getProductsId())
-                    .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다: " + dto.getProductsId()));
-
-            // 2. 이미지 처리 (기존 이미지 + 새 이미지)
-            String finalImageUrl = dto.getImageUrl();
-            if (images != null && !images.isEmpty()) {
-                List<String> newImageUrls = saveImages(images);
-
-                String existingImageUrl = dto.getImageUrl() != null ? dto.getImageUrl() : "";
-                List<String> allImageUrls = new ArrayList<>();
-
-                if (!existingImageUrl.isEmpty()) {
-                    String[] existingUrls = existingImageUrl.split(",");
-                    for (String url : existingUrls) {
-                        if (!url.trim().isEmpty()) {
-                            allImageUrls.add(url.trim());
-                        }
-                    }
-                }
-                allImageUrls.addAll(newImageUrls);
-                finalImageUrl = String.join(",", allImageUrls);
-            }
-
-            // 3. Products 엔티티 업데이트
-            Products updatedProduct = Products.builder()
-                    .productsId(product.getProductsId())
-                    .name(dto.getName())
-                    .brand(dto.getBrand())
-                    .category(dto.getCategory())
-                    .description(dto.getDescription())
-                    .price(dto.getPrice())
-                    .quantity(dto.getQuantity())
-                    .snackType(dto.getSnackType() != null ? dto.getSnackType() : dto.getCategory())
-                    .imageUrl(finalImageUrl)
-                    .size(dto.getSize())
-                    .madein(dto.getMadeIn())
-                    .build();
-
-            productsRepository.save(updatedProduct);
-
-            // 4. Ingredients 변경 확인 후 업데이트
-            updateIngredientsIfChanged(updatedProduct, dto.getIngredientDTOs());
-
-            // 5. Benefits 변경 확인 후 업데이트
-            updateBenefitsIfChanged(updatedProduct, dto.getBenefitDTOs());
-
-            log.info("상품 수정 완료: {}", dto.getProductsId());
-        } catch (Exception e) {
-            log.error("제품 수정 실패: ", e);
-            throw new RuntimeException("제품 수정 중 오류가 발생했습니다: " + e.getMessage());
-        }
-    }
-
     // 이미지 파일 저장
     public List<String> saveImages(List<MultipartFile> images) throws IOException {
         List<String> imageUrls = new ArrayList<>();
@@ -199,8 +139,6 @@ public class AdminProductService {
         }
     }
 
-
-
     // Ingredients 저장
     private void saveIngredients(Products product, List<IngredientDto> ingredientList) {
         for (IngredientDto ingredientDto : ingredientList) {
@@ -226,123 +164,6 @@ public class AdminProductService {
             
             productBenefitRepository.save(productBenefit);
         }
-    }
-
-
-
-    // Ingredients 변경 확인 후 업데이트
-    private void updateIngredientsIfChanged(Products product, List<IngredientDTO> newIngredientDTOs) {
-        List<Ingredients> existingIngredients = ingredientsRepository.findAllByProductsId(product.getProductsId());
-
-        // 새 데이터가 null이거나 비어있으면
-        if (newIngredientDTOs == null || newIngredientDTOs.isEmpty()) {
-            if (existingIngredients != null && !existingIngredients.isEmpty()) {
-                ingredientsRepository.deleteAll(existingIngredients);
-            }
-            return;
-        }
-
-        // 기존 데이터가 없으면 새로 저장
-        if (existingIngredients == null || existingIngredients.isEmpty()) {
-            List<IngredientDto> ingredientList = new ArrayList<>();
-            for (IngredientDTO dtoItem : newIngredientDTOs) {
-                IngredientDto ingredientDto = new IngredientDto();
-                ingredientDto.setName(dtoItem.getName());
-                ingredientDto.setPercentage(String.valueOf(dtoItem.getPercentage()));
-                ingredientList.add(ingredientDto);
-            }
-            saveIngredients(product, ingredientList);
-            return;
-        }
-
-        // 변경 여부 확인 (순서와 내용 비교)
-        boolean isChanged = false;
-
-        if (existingIngredients.size() != newIngredientDTOs.size()) {
-            isChanged = true;
-        } else {
-            // 크기가 같으면 내용 비교
-            for (int i = 0; i < existingIngredients.size(); i++) {
-                Ingredients existing = existingIngredients.get(i);
-                IngredientDTO newDto = newIngredientDTOs.get(i);
-
-                if (!existing.getIngredientsName().equals(newDto.getName()) ||
-                        existing.getIngredientsPercentage() != newDto.getPercentage()) {
-                    isChanged = true;
-                    break;
-                }
-            }
-        }
-
-        // 변경이 있으면 삭제 후 재생성
-        if (isChanged) {
-            ingredientsRepository.deleteAll(existingIngredients);
-            List<IngredientDto> ingredientList = new ArrayList<>();
-            for (IngredientDTO dtoItem : newIngredientDTOs) {
-                IngredientDto ingredientDto = new IngredientDto();
-                ingredientDto.setName(dtoItem.getName());
-                ingredientDto.setPercentage(String.valueOf(dtoItem.getPercentage()));
-                ingredientList.add(ingredientDto);
-            }
-            saveIngredients(product, ingredientList);
-        }
-        // 변경이 없으면 그대로 유지 (DB 쿼리 없음)
-    }
-
-    // Benefits 변경 확인 후 업데이트
-    private void updateBenefitsIfChanged(Products product, List<BenefitDTO> newBenefitDTOs) {
-        List<ProductBenefit> existingBenefits = productBenefitRepository.findAllByProductsId(product.getProductsId());
-
-        // 새 데이터가 null이거나 비어있으면
-        if (newBenefitDTOs == null || newBenefitDTOs.isEmpty()) {
-            if (existingBenefits != null && !existingBenefits.isEmpty()) {
-                productBenefitRepository.deleteAll(existingBenefits);
-            }
-            return;
-        }
-
-        // 기존 데이터가 없으면 새로 저장
-        if (existingBenefits == null || existingBenefits.isEmpty()) {
-            List<String> benefitNames = new ArrayList<>();
-            for (BenefitDTO benefitDTO : newBenefitDTOs) {
-                benefitNames.add(benefitDTO.getName());
-            }
-            saveProductBenefits(product, benefitNames);
-            return;
-        }
-
-        // 변경 여부 확인 (순서와 내용 비교)
-        boolean isChanged = false;
-
-        if (existingBenefits.size() != newBenefitDTOs.size()) {
-            isChanged = true;
-        } else {
-            // 크기가 같으면 내용 비교
-            java.util.Set<String> existingNames = new java.util.HashSet<>();
-            for (ProductBenefit existing : existingBenefits) {
-                existingNames.add(existing.getBenefitName());
-            }
-
-            java.util.Set<String> newNames = new java.util.HashSet<>();
-            for (BenefitDTO newDto : newBenefitDTOs) {
-                newNames.add(newDto.getName());
-            }
-
-            if (!existingNames.equals(newNames)) {
-                isChanged = true;
-            }
-        }
-
-        // 변경이 있으면 삭제 후 재생성
-        if (isChanged) {
-            productBenefitRepository.deleteAll(existingBenefits);
-            List<String> benefitNames = new ArrayList<>();
-            for (BenefitDTO benefitDTO : newBenefitDTOs) {
-                benefitNames.add(benefitDTO.getName());
-            }
-            saveProductBenefits(product, benefitNames);
-        }
-        // 변경이 없으면 그대로 유지 (DB 쿼리 없음)
     }
 
     // ID 생성 메서드들

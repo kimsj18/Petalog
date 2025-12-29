@@ -52,7 +52,7 @@ export const reviewService = {
    * POST /reviews
    */
   async createReview(data: CreateReviewRequest): Promise<ApiResponse<{ id: string }>> {
-    return apiClient.post<{ id: string }>('/reviews', data);
+    return apiClient.post<{ id: string }>(`/v1/products/${data.products_id}/review`, data);
   },
 
   /**

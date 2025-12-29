@@ -1,26 +1,118 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TrendingUp, ChevronRight, ChevronDown } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { Product } from '../App';
+import { Product } from '../types';
 import { Container } from './common/Container';
+import { apiClient } from '@/lib/api';
+
+// 이미지 URL 변환 함수: 상대 경로를 전체 URL로 변환
+const getImageUrl = (imageUrl: string | undefined | null): string => {
+  if (!imageUrl) return '';
+  
+  // 이미 전체 URL인 경우 (http:// 또는 https://로 시작)
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
+  
+  // 상대 경로인 경우 (/uploads/...)
+  if (imageUrl.startsWith('/')) {
+    // 백엔드 서버 URL
+    // Next.js에서는 클라이언트 사이드에서 환경 변수 접근이 제한적이므로
+    // 기본값으로 localhost:8080 사용 (프로덕션에서는 환경 변수 설정 필요)
+    const backendUrl = typeof window !== 'undefined' 
+      ? (window.location.hostname === 'localhost' 
+          ? 'http://localhost:8080' 
+          : `${window.location.protocol}//${window.location.hostname}:8080`)
+      : 'http://localhost:8080';
+    return `${backendUrl}${imageUrl}`;
+  }
+  
+  return imageUrl;
+};
 
 interface TrendingRankingProps {
   onProductClick?: (product: Product) => void;
 }
 
+// API 응답 타입 정의
+interface IngredientDTO {
+  name: string;
+  percentage: number;
+}
+
+interface BenefitDTO {
+  name: string;
+}
+
+interface ProductDetailDTO {
+  productsId: string;
+  name: string;
+  brand: string;
+  category: string;
+  snackType: string;
+  imageUrl: string;
+  madeIn: string;
+  size: number;
+  price: number;
+  quantity: number;
+  description: string;
+  ingredientDTOs: IngredientDTO[];
+  benefitDTOs: BenefitDTO[];
+}
+
 export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-
+  const [apiProducts, setApiProducts] = useState<ProductDetailDTO[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+ 
   const categories = [
     { id: 'all', name: '카테고리 전체' },
     { id: 'treat', name: '트릿/큐브' },
     { id: 'jerky', name: '육포/저키' },
     { id: 'churu', name: '츄르/액상' },
     { id: 'dental', name: '덴탈껌' },
+    { id: 'cookie', name: '쿠키' },
   ];
+
+  // 카테고리별 랭킹 데이터 가져오기
+  useEffect(() => {
+    const fetchCategoryRanking = async () => {
+      // 'all' 카테고리는 API 호출하지 않음 (mock 데이터 사용)
+      if (selectedCategory === 'all') {
+        setApiProducts([]);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await apiClient.get<ProductDetailDTO[]>(
+          '/v1/user/categoryList',
+          { category: selectedCategory }
+        );
+
+        if (response.success && response.data) {
+          setApiProducts(response.data);
+        } else {
+          setError(response.error || '데이터를 불러오는데 실패했습니다.');
+          setApiProducts([]);
+        }
+      } catch (err) {
+        console.error('카테고리별 랭킹 조회 실패:', err);
+        setError('데이터를 불러오는데 실패했습니다.');
+        setApiProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategoryRanking();
+  }, [selectedCategory]);
 
   // 급상승 1위 제품
   const topTrendingProduct = {
@@ -191,7 +283,51 @@ export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
     ],
   };
 
-  const currentProducts = categoryProducts[selectedCategory as keyof typeof categoryProducts] || categoryProducts.all;
+  // 선택된 카테고리에 따라 표시할 제품 결정
+  type DisplayProduct = {
+    rank: number;
+    change: string;
+    brand: string;
+    name: string;
+    rating: number;
+    reviewCount: number;
+    image: string;
+    productData?: ProductDetailDTO; // API 응답 데이터인 경우
+  };
+
+  const currentProducts: DisplayProduct[] = selectedCategory === 'all' 
+    ? categoryProducts.all.map(item => ({
+        rank: item.rank,
+        change: item.change,
+        brand: item.brand,
+        name: item.name,
+        rating: item.rating,
+        reviewCount: item.reviewCount,
+        image: item.image,
+      }))
+    : apiProducts.length > 0 
+      ? apiProducts.map((product, index) => {
+          // imageUrl이 쉼표로 구분된 여러 이미지일 수 있으므로 첫 번째 이미지만 사용
+          const firstImageUrl = product.imageUrl 
+            ? product.imageUrl.split(',')[0].trim() 
+            : '';
+          
+          // 상대 경로를 전체 URL로 변환
+          const fullImageUrl = getImageUrl(firstImageUrl);
+          
+          return {
+            rank: index + 1,
+            change: '0', // API 응답에 순위 변동 정보가 없으면 기본값
+            brand: product.brand,
+            name: product.name,
+            rating: 0, // API 응답에 rating이 없으면 기본값
+            reviewCount: 0, // API 응답에 reviewCount가 없으면 기본값
+            image: fullImageUrl,
+            productData: product, // 원본 데이터 보관
+          };
+        })
+      : [];
+  
   const currentCategoryName = categories.find(c => c.id === selectedCategory)?.name || '카테고리 전체';
 
   const getRankBadgeColor = (rank: number) => {
@@ -207,22 +343,65 @@ export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
     return 'text-gray-400';
   };
 
-  // 간단한 제품 객체를 Product 타입으로 변환
-  const convertToProduct = (item: any, id: string): Product => ({
-    id,
-    name: item.name,
-    brand: item.brand,
-    price: 15000,
-    rating: item.rating,
-    reviewCount: item.reviewCount,
-    image: item.image,
-    ingredients: ['닭가슴살', '고구마'],
-    benefits: ['소화 개선', '면역력 강화'],
-    ageGroup: ['전연령'],
-    size: '200g',
-    madeIn: '대한민국',
-    bestFor: ['전체크기'],
-  });
+  // 제품 객체를 Product 타입으로 변환
+  const convertToProduct = (item: DisplayProduct, id: string): Product => {
+    // API 응답 데이터인 경우
+    if (item.productData) {
+      const product = item.productData;
+      // imageUrl이 쉼표로 구분된 여러 이미지일 수 있으므로 첫 번째 이미지만 사용
+      const firstImageUrl = product.imageUrl 
+        ? product.imageUrl.split(',')[0].trim() 
+        : '';
+      
+      // 상대 경로를 전체 URL로 변환
+      const fullImageUrl = getImageUrl(firstImageUrl);
+      
+      return {
+        products_id: product.productsId,
+        name: product.name,
+        brand: product.brand,
+        category: product.category,
+        snack_type: product.snackType,
+        imageUrl: fullImageUrl,
+        quantity: product.quantity,
+        price: product.price,
+        rating: item.rating || 0,
+        reviewCount: item.reviewCount || 0,
+        ingredients: product.ingredientDTOs.map(ing => ({
+          ingredients_id: '',
+          products_id: product.productsId,
+          ingredients_name: ing.name,
+        })),
+        benefits: product.benefitDTOs.map(ben => ({
+          benefit_id: '',
+          products_id: product.productsId,
+          benefit_name: ben.name,
+        })),
+        size: `${product.size}g`,
+        madeIn: product.madeIn,
+        ageGroup: ['전연령'],
+      };
+    }
+    
+    // Mock 데이터인 경우
+    return {
+      products_id: id,
+      name: item.name,
+      brand: item.brand,
+      category: selectedCategory === 'all' ? 'all' : selectedCategory,
+      snack_type: '',
+      imageUrl: item.image,
+      quantity: 0,
+      price: 15000,
+      rating: item.rating,
+      reviewCount: item.reviewCount,
+      ingredients: [],
+      benefits: [],
+      size: '200g',
+      madeIn: '대한민국',
+      ageGroup: ['전연령'],
+    };
+  };
 
   return (
     <Container>
@@ -254,7 +433,7 @@ export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
           </div>
 
           <div className="flex gap-4 items-center">
-            <div className="w-32 h-32 flex-shrink-0">
+            <div className="w-32 h-32 shrink-0">
               <ImageWithFallback
                 src={topTrendingProduct.image}
                 alt={topTrendingProduct.name}
@@ -314,45 +493,71 @@ export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
           )}
         </div>
 
+        {/* 로딩 및 에러 상태 */}
+        {loading && (
+          <div className="text-center py-8 text-gray-500">로딩 중...</div>
+        )}
+        
+        {error && (
+          <div className="text-center py-8 text-red-500">{error}</div>
+        )}
+
         {/* 제품 리스트 */}
-        <div className="space-y-3">
-          {currentProducts.map((product, index) => (
-            <div 
-              key={index} 
-              onClick={() => onProductClick && onProductClick(convertToProduct(product, `trending-${selectedCategory}-${index}`))}
-              className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 p-3 cursor-pointer hover:shadow-md transition-shadow"
-            >
-              <div className="flex-shrink-0 relative">
-                <div className={`${getRankBadgeColor(product.rank)} text-white size-8 rounded-full flex items-center justify-center text-sm`}>
-                  {product.rank}
-                </div>
-                {product.change !== '0' && (
-                  <div className={`text-center mt-0.5 text-xs ${getChangeColor(product.change)}`}>
-                    {product.change}
+        {!loading && !error && (
+          <div className="space-y-3">
+            {currentProducts.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                {selectedCategory === 'all' 
+                  ? '카테고리를 선택해주세요.' 
+                  : '해당 카테고리의 제품이 없습니다.'}
+              </div>
+            ) : (
+              currentProducts.map((product, index) => (
+                <div 
+                  key={product.productData ? product.productData.productsId : `mock-${index}`} 
+                  onClick={() => onProductClick && onProductClick(convertToProduct(product, product.productData ? product.productData.productsId : `trending-${selectedCategory}-${index}`))}
+                  className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 p-3 cursor-pointer hover:shadow-md transition-shadow"
+                >
+                  <div className="shrink-0 relative">
+                    <div className={`${getRankBadgeColor(product.rank)} text-white size-8 rounded-full flex items-center justify-center text-sm`}>
+                      {product.rank}
+                    </div>
+                    {product.change !== '0' && (
+                      <div className={`text-center mt-0.5 text-xs ${getChangeColor(product.change)}`}>
+                        {product.change}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              <div className="w-16 h-16 flex-shrink-0">
-                <ImageWithFallback
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-full object-cover rounded"
-                />
-              </div>
+                  <div className="w-16 h-16 shrink-0">
+                    <ImageWithFallback
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover rounded"
+                    />
+                  </div>
 
-              <div className="flex-1 min-w-0">
-                <div className="text-xs text-gray-500">{product.brand}</div>
-                <h4 className="text-sm text-gray-900 line-clamp-1 mb-1">{product.name}</h4>
-                <div className="flex items-center gap-1 text-xs">
-                  <span className="text-orange-500">★</span>
-                  <span>{product.rating}</span>
-                  <span className="text-gray-400">({product.reviewCount.toLocaleString()})</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-gray-500">{product.brand}</div>
+                    <h4 className="text-sm text-gray-900 line-clamp-1 mb-1">{product.name}</h4>
+                    {product.productData ? (
+                      <div className="flex items-center gap-2 text-xs text-gray-600">
+                        <span>{product.productData.price.toLocaleString()}원</span>
+                        {product.productData.size && <span>· {product.productData.size}g</span>}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 text-xs">
+                        <span className="text-orange-500">★</span>
+                        <span>{product.rating}</span>
+                        <span className="text-gray-400">({product.reviewCount.toLocaleString()})</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              ))
+            )}
+          </div>
+        )}
 
         {/* 카테고리 전체보기 버튼 */}
         <button className="w-full mt-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1">

@@ -12,8 +12,8 @@ public class ProductNewDto {
     private String brand;
     private String category;
     private String description;
-    private int price;
-    private int quantity;
+    private Integer price;
+    private Integer quantity;
     private String size;
     private String madeIn;
     private String stockQuantity;

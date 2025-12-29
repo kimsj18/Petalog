@@ -15,32 +15,137 @@ import {
   Shield,
   Truck
 } from 'lucide-react';
-import { Product } from '../../types';
+import { Product, Ingredient, ProductBenefit } from '../../types';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
-import { mockProducts } from '../../data/mockData';
 import { Container } from '../common/Container';
+import { apiClient } from '../../lib/api';
+import { ReviewForm } from './ReviewForm';
+
+// 이미지 URL 변환 함수: 상대 경로를 전체 URL로 변환
+const getImageUrl = (imageUrl: string | undefined | null): string => {
+  if (!imageUrl) return '';
+  
+  // 이미 전체 URL인 경우 (http:// 또는 https://로 시작)
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
+  
+  // 상대 경로인 경우 (/uploads/...)
+  if (imageUrl.startsWith('/')) {
+    // 백엔드 서버 URL
+    // Next.js에서는 클라이언트 사이드에서 환경 변수 접근이 제한적이므로
+    // 기본값으로 localhost:8080 사용 (프로덕션에서는 환경 변수 설정 필요)
+    const backendUrl = typeof window !== 'undefined' 
+      ? (window.location.hostname === 'localhost' 
+          ? 'http://localhost:8080' 
+          : `${window.location.protocol}//${window.location.hostname}:8080`)
+      : 'http://localhost:8080';
+    return `${backendUrl}${imageUrl}`;
+  }
+  
+  return imageUrl;
+};
 
 interface ProductDetailPageProps {
   productId: string;
 }
 
+// 백엔드 응답 타입
+interface ProductDetailResponse {
+  productsId: string;
+  name: string;
+  brand: string;
+  category: string;
+  snackType: string;
+  imageUrl: string;
+  madeIn: string;
+  quantity: number;
+  size: number;
+  price: number;
+  description: string;
+  ingredientDTOs: Array<{
+    name: string;
+    percentage: number;
+  }>;
+  benefitDTOs: Array<{
+    name: string;
+  }>;
+}
+
 export function ProductDetailPage({ productId }: ProductDetailPageProps) {
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<'info' | 'ingredients' | 'reviews'>('info');
   const [quantity, setQuantity] = useState(1);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
   useEffect(() => {
-    // TODO: API 호출로 변경
-    // const response = await productService.getProductById(productId);
-    // setProduct(response.data);
-    
-    // 현재는 Mock 데이터 사용
-    const foundProduct = mockProducts.find(p => p.products_id === productId);
-    setProduct(foundProduct || null);
+    const fetchProduct = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await apiClient.get<ProductDetailResponse>(
+          `/v1/user/productDetail?productId=${productId}`
+        );
+
+        if (!response.success || !response.data) {
+          throw new Error(response.error || '상품을 불러올 수 없습니다.');
+        }
+
+        const data = response.data;
+        console.log(data)
+
+        // 이미지 URL 파싱 (콤마로 구분된 문자열을 배열로 변환)
+        const parsedImageUrls = data.imageUrl 
+          ? data.imageUrl.split(',').map(url => url.trim()).filter(url => url.length > 0).map(url => getImageUrl(url))
+          : [];
+        setImageUrls(parsedImageUrls);
+        
+        // 백엔드 응답을 프론트엔드 Product 타입으로 변환
+        const convertedProduct: Product = {
+          products_id: data.productsId,
+          name: data.name,
+          brand: data.brand,
+          category: data.category,
+          snack_type: data.snackType,
+          imageUrl: parsedImageUrls[0] || data.imageUrl, // 첫 번째 이미지를 기본으로
+          madeIn: data.madeIn,
+          quantity: data.quantity,
+          size: String(data.size),
+          price: data.price,
+          // ingredients 변환
+          ingredients: data.ingredientDTOs?.map((ing, index) => ({
+            ingredients_id: `ing_${data.productsId}_${index}`,
+            products_id: data.productsId,
+            ingredients_name: ing.name,
+            ingredients_percentage: ing.percentage,
+          })) || [],
+          // benefits 변환
+          benefits: data.benefitDTOs?.map((ben, index) => ({
+            benefit_id: `ben_${data.productsId}_${index}`,
+            products_id: data.productsId,
+            benefit_name: ben.name,
+          })) || [],
+
+        };
+
+        setProduct(convertedProduct);
+      } catch (err) {
+        console.error('상품 조회 오류:', err);
+        setError(err instanceof Error ? err.message : '상품을 불러오는 중 오류가 발생했습니다.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
   }, [productId]);
 
-  if (!product) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-gray-500">상품을 불러오는 중...</div>
@@ -48,9 +153,25 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
     );
   }
 
-  const discountRate = product.originalPrice && product.price
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-    : 0;
+  if (error || !product) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-2">{error || '상품을 찾을 수 없습니다.'}</div>
+          <button
+            onClick={() => router.back()}
+            className="text-blue-600 hover:text-blue-700"
+          >
+            돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // const discountRate = product.originalPrice && product.price
+  //   ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  //   : 0;
 
   const totalPrice = (product.price ?? 0) * quantity;
 
@@ -110,8 +231,8 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="min-h-screen">
+    <div className="min-h-screen bg-white overflow-y-auto">
+      <div>
         {/* 헤더 */}
         <div className="sticky top-0 z-50 bg-white border-b border-gray-200">
           <Container size="narrow">
@@ -134,19 +255,21 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
           </Container>
         </div>
 
-        {/* 제품 이미지 */}
-        <div className="relative aspect-square bg-gray-50">
-          <ImageWithFallback
-            src={product.imageUrl}
-            alt={product.name}
-            className="w-full h-full object-cover"
-          />
-          {discountRate > 0 && (
-            <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-lg">
-              <span className="text-lg">{discountRate}%</span>
-            </div>
-          )}
-        </div>
+        {/* 제품 이미지 - 첫 번째 이미지 */}
+        <Container size="narrow">
+          <div className="relative aspect-[4/3] bg-gray-50 rounded-lg overflow-hidden">
+            <ImageWithFallback
+              src={imageUrls[0] || product.imageUrl}
+              alt={product.name}
+              className="w-full h-full object-cover"
+            />
+            {/*{discountRate > 0 && (*/}
+            {/*  <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-lg">*/}
+            {/*    <span className="text-lg">{discountRate}%</span>*/}
+            {/*  </div>*/}
+            {/*)}*/}
+          </div>
+        </Container>
 
         {/* 제품 기본 정보 */}
         <Container size="narrow">
@@ -177,14 +300,14 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
 
           <div className="bg-gray-50 rounded-xl p-4">
             <div className="flex items-baseline gap-2 mb-2">
-              {product.originalPrice && (
-                <span className="text-gray-400 line-through">
-                  {product.originalPrice.toLocaleString()}원
-                </span>
-              )}
-              {discountRate > 0 && (
-                <span className="text-red-500">{discountRate}%</span>
-              )}
+              {/*{product.price && (*/}
+              {/*  <span className="text-gray-400 line-through">*/}
+              {/*    {product.price.toLocaleString()}원*/}
+              {/*  </span>*/}
+              {/*)}*/}
+              {/*{discountRate > 0 && (*/}
+              {/*  <span className="text-red-500">{discountRate}%</span>*/}
+              {/*)}*/}
             </div>
             <div className="text-2xl text-gray-900">
               {(product.price ?? 0).toLocaleString()}원
@@ -236,16 +359,16 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
             >
               상품정보
             </button>
-            <button
-              onClick={() => setSelectedTab('ingredients')}
-              className={`flex-1 px-4 py-3 border-b-2 transition-colors ${
-                selectedTab === 'ingredients'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600'
-              }`}
-            >
-              원재료/성분
-            </button>
+            {/*<button*/}
+            {/*  onClick={() => setSelectedTab('ingredients')}*/}
+            {/*  className={`flex-1 px-4 py-3 border-b-2 transition-colors ${*/}
+            {/*    selectedTab === 'ingredients'*/}
+            {/*      ? 'border-blue-600 text-blue-600'*/}
+            {/*      : 'border-transparent text-gray-600'*/}
+            {/*  }`}*/}
+            {/*>*/}
+            {/*  원재료/성분*/}
+            {/*</button>*/}
             <button
               onClick={() => setSelectedTab('reviews')}
               className={`flex-1 px-4 py-3 border-b-2 transition-colors ${
@@ -262,101 +385,174 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
 
         {/* 탭 컨텐츠 */}
         <Container size="narrow">
-          <div className="py-6 pb-32">
+          <div className="py-6 pb-40">
           {/* 상품정보 탭 */}
           {selectedTab === 'info' && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-lg text-gray-900 mb-4">제품 상세</h2>
-                <div className="space-y-3">
-                  <div className="flex py-2 border-b border-gray-100">
-                    <div className="w-24 text-sm text-gray-500">용량</div>
-                    <div className="flex-1 text-sm text-gray-900">{product.size}</div>
-                  </div>
-                  <div className="flex py-2 border-b border-gray-100">
-                    <div className="w-24 text-sm text-gray-500">원산지</div>
-                    <div className="flex-1 text-sm text-gray-900">{product.madeIn}</div>
-                  </div>
-                  <div className="flex py-2 border-b border-gray-100">
-                    <div className="w-24 text-sm text-gray-500">적합 연령</div>
-                    <div className="flex-1 text-sm text-gray-900">{product.ageGroup?.join(', ') ?? '-'}</div>
-                  </div>
-                  <div className="flex py-2 border-b border-gray-100">
-                    <div className="w-24 text-sm text-gray-500">브랜드</div>
-                    <div className="flex-1 text-sm text-gray-900">{product.brand}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h2 className="text-lg text-gray-900 mb-4">효능</h2>
-                <div className="grid grid-cols-2 gap-3">
-                  {product.benefits?.map(benefit => (
-                    <div
-                      key={benefit.benefit_id}
-                      className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg"
-                    >
-                      <Check className="size-5 text-blue-600 shrink-0" />
-                      <span className="text-sm text-gray-900">{benefit.benefit_name}</span>
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-lg text-gray-900 mb-4">제품 상세</h2>
+                  <div className="space-y-3">
+                    <div className="flex py-2 border-b border-gray-100">
+                      <div className="w-24 text-sm text-gray-500">용량</div>
+                      <div className="flex-1 text-sm text-gray-900">{product.size}g</div>
                     </div>
-                  )) ?? <div className="text-sm text-gray-500">효능 정보 없음</div>}
+                    <div className="flex py-2 border-b border-gray-100">
+                      <div className="w-24 text-sm text-gray-500">원산지</div>
+                      <div className="flex-1 text-sm text-gray-900">{product.madeIn}</div>
+                    </div>
+                    {/*<div className="flex py-2 border-b border-gray-100">*/}
+                    {/*  <div className="w-24 text-sm text-gray-500">적합 연령</div>*/}
+                    {/*  <div className="flex-1 text-sm text-gray-900">{product.ageGroup?.join(', ') ?? '-'}</div>*/}
+                    {/*</div>*/}
+                    <div className="flex py-2 border-b border-gray-100">
+                      <div className="w-24 text-sm text-gray-500">브랜드</div>
+                      <div className="flex-1 text-sm text-gray-900">{product.brand}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 추가 이미지 - 나머지 2개 */}
+                {imageUrls.length > 1 && (
+                  <div>
+                    <h2 className="text-lg text-gray-900 mb-4">제품 이미지</h2>
+                    <div className="grid grid-cols-1 gap-4">
+                      {imageUrls.slice(1, 3).map((imageUrl, index) => (
+                        <div key={index} className="relative aspect-square bg-gray-50 rounded-lg overflow-hidden">
+                          <ImageWithFallback
+                            src={imageUrl}
+                            alt={`${product.name} - 이미지 ${index + 2}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-lg text-gray-900 mb-4">원재료</h2>
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <div className="flex flex-wrap gap-2">
+                        {product.ingredients?.map((ingredient, idx) => (
+                            <div key={ingredient.ingredients_id} className="flex items-center gap-2">
+                              <span className="text-sm text-gray-900">{ingredient.ingredients_name}</span>
+                              {idx < (product.ingredients?.length ?? 0) - 1 && (
+                                  <span className="text-gray-300">•</span>
+                              )}
+                            </div>
+                        )) ?? <span className="text-sm text-gray-500">원재료 정보 없음</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h2 className="text-lg text-gray-900 mb-4">성분 분석</h2>
+                    <div className="space-y-3">
+                      {product.ingredients?.slice(0, 5).map((ingredient, idx) => (
+                          <div key={ingredient.ingredients_id}>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm text-gray-900">{ingredient.ingredients_name}</span>
+                              <span className="text-sm text-gray-500">
+                          {ingredient.ingredients_percentage}%
+                        </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                  className="bg-blue-600 h-2 rounded-full transition-all"
+                                  style={{width: `${ingredient.ingredients_percentage}%`}}
+                              />
+                            </div>
+                          </div>
+                      )) ?? <div className="text-sm text-gray-500">성분 정보 없음</div>}
+                    </div>
+                  </div>
+
+                  {product.ingredients && product.ingredients.length > 0 && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                        <div className="flex gap-3">
+                          <AlertCircle className="size-5 text-yellow-600 shrink-0 mt-0.5"/>
+                          <div>
+                            <h3 className="text-sm text-yellow-900 mb-1">알러지 주의</h3>
+                            <p className="text-sm text-yellow-700">
+                              해당 제품은 {product.ingredients[0].ingredients_name}을(를) 포함하고 있습니다.
+                              알러지가 있는 반려견은 주의해주세요.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                  )}
+                </div>
+
+                <div>
+                  <h2 className="text-lg text-gray-900 mb-4">효능</h2>
+                  <div className="grid grid-cols-2 gap-3">
+                    {product.benefits?.map(benefit => (
+                        <div
+                            key={benefit.benefit_id}
+                            className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg"
+                        >
+                          <Check className="size-5 text-blue-600 shrink-0"/>
+                          <span className="text-sm text-gray-900">{benefit.benefit_name}</span>
+                        </div>
+                    )) ?? <div className="text-sm text-gray-500">효능 정보 없음</div>}
+                  </div>
                 </div>
               </div>
-            </div>
           )}
 
-          {/* 원재료/성분 탭 */}
-          {selectedTab === 'ingredients' && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-lg text-gray-900 mb-4">원재료</h2>
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div className="flex flex-wrap gap-2">
-                    {product.ingredients?.map((ingredient, idx) => (
-                      <div key={ingredient.ingredients_id} className="flex items-center gap-2">
-                        <span className="text-sm text-gray-900">{ingredient.ingredients_name}</span>
-                        {idx < (product.ingredients?.length ?? 0) - 1 && (
-                          <span className="text-gray-300">•</span>
-                        )}
+            {/* 원재료/성분 탭 */}
+            {selectedTab === 'ingredients' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-lg text-gray-900 mb-4">원재료</h2>
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <div className="flex flex-wrap gap-2">
+                        {product.ingredients?.map((ingredient, idx) => (
+                            <div key={ingredient.ingredients_id} className="flex items-center gap-2">
+                              <span className="text-sm text-gray-900">{ingredient.ingredients_name}</span>
+                              {idx < (product.ingredients?.length ?? 0) - 1 && (
+                                  <span className="text-gray-300">•</span>
+                              )}
+                            </div>
+                        )) ?? <span className="text-sm text-gray-500">원재료 정보 없음</span>}
                       </div>
-                    )) ?? <span className="text-sm text-gray-500">원재료 정보 없음</span>}
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div>
-                <h2 className="text-lg text-gray-900 mb-4">성분 분석</h2>
-                <div className="space-y-3">
-                  {product.ingredients?.slice(0, 5).map((ingredient, idx) => (
-                    <div key={ingredient.ingredients_id}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-900">{ingredient.ingredients_name}</span>
-                        <span className="text-sm text-gray-500">
+                  <div>
+                    <h2 className="text-lg text-gray-900 mb-4">성분 분석</h2>
+                    <div className="space-y-3">
+                      {product.ingredients?.slice(0, 5).map((ingredient, idx) => (
+                          <div key={ingredient.ingredients_id}>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm text-gray-900">{ingredient.ingredients_name}</span>
+                              <span className="text-sm text-gray-500">
                           {Math.round((5 - idx) * 15)}%
                         </span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full transition-all"
-                          style={{ width: `${(5 - idx) * 15}%` }}
-                        />
-                      </div>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                  className="bg-blue-600 h-2 rounded-full transition-all"
+                                  style={{width: `${(5 - idx) * 15}%`}}
+                              />
+                            </div>
+                          </div>
+                      )) ?? <div className="text-sm text-gray-500">성분 정보 없음</div>}
                     </div>
-                  )) ?? <div className="text-sm text-gray-500">성분 정보 없음</div>}
-                </div>
-              </div>
+                  </div>
 
-              {product.ingredients && product.ingredients.length > 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                  <div className="flex gap-3">
-                    <AlertCircle className="size-5 text-yellow-600 shrink-0 mt-0.5" />
-                    <div>
-                      <h3 className="text-sm text-yellow-900 mb-1">알러지 주의</h3>
-                      <p className="text-sm text-yellow-700">
-                        해당 제품은 {product.ingredients[0].ingredients_name}을(를) 포함하고 있습니다. 
-                        알러지가 있는 반려견은 주의해주세요.
-                      </p>
-                    </div>
+                  {product.ingredients && product.ingredients.length > 0 && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                        <div className="flex gap-3">
+                          <AlertCircle className="size-5 text-yellow-600 shrink-0 mt-0.5"/>
+                          <div>
+                            <h3 className="text-sm text-yellow-900 mb-1">알러지 주의</h3>
+                            <p className="text-sm text-yellow-700">
+                              해당 제품은 {product.ingredients[0].ingredients_name}을(를) 포함하고 있습니다.
+                              알러지가 있는 반려견은 주의해주세요.
+                            </p>
+                          </div>
                   </div>
                 </div>
               )}
@@ -389,7 +585,10 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
               </div>
 
               {/* 리뷰 작성 버튼 */}
-              <button className="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+              <button 
+                onClick={() => setShowReviewForm(true)}
+                className="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+              >
                 <MessageSquare className="size-5" />
                 리뷰 작성하기
               </button>
@@ -489,6 +688,19 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
             </div>
           </Container>
         </div>
+
+        {/* 리뷰 작성 폼 모달 */}
+        {showReviewForm && product && (
+          <ReviewForm
+            productId={productId}
+            productName={product.name}
+            onClose={() => setShowReviewForm(false)}
+            onSuccess={() => {
+              // 리뷰 목록 새로고침 (필요시)
+              setShowReviewForm(false);
+            }}
+          />
+        )}
       </div>
     </div>
   );

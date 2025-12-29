@@ -238,7 +238,7 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
     if (!formData.price || parseFloat(formData.price) <= 0) newErrors.push('올바른 가격을 입력해주세요.');
     if (!formData.size.trim()) newErrors.push('용량을 입력해주세요.');
     if (!formData.madeIn) newErrors.push('원산지를 선택해주세요.');
-    if (!formData.stockQuantity || parseInt(formData.stockQuantity) < 0) newErrors.push('재고 수량을 입력해주세요.');
+    if (!formData.quantity || parseInt(formData.quantity) < 0) newErrors.push('재고 수량을 입력해주세요.');
     // if (formData.ageGroup.length === 0) newErrors.push('적합 연령대를 최소 1개 선택해주세요.');
     if (formData.images.length === 0) newErrors.push('이미지를 최소 1개 업로드해주세요.');
     if (formData.ingredients.length === 0) newErrors.push('원재료를 최소 1개 추가해주세요.');
@@ -282,8 +282,7 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
       submitData.append('size', formData.size);
       submitData.append('quantity', formData.quantity)
       submitData.append('madeIn', formData.madeIn);
-      submitData.append('stockQuantity', formData.stockQuantity);
-      
+
       // 이미지 파일 추가 (새로 추가된 파일만)
       formData.images.forEach((image) => {
         // File 객체이고 실제 파일인 경우만 추가 (기존 이미지 URL은 제외)
@@ -604,7 +603,7 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
               </div>
 
               <div>
-                <label htmlFor="quantity" className="block text-sm text-gray-700 mb-2">
+                <label htmlFor="stockQuantity" className="block text-sm text-gray-700 mb-2">
                   재고 수량 <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -614,6 +613,7 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
                   value={formData.quantity}
                   onChange={handleChange}
                   placeholder="100"
+                  min="0"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -624,7 +624,7 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
           <section>
             <h2 className="text-lg text-gray-900 mb-4 flex items-center gap-2">
               <ImageIcon className="size-5 text-blue-600" />
-              제품 이미지 (최대 3개)
+              제품 이미지 (최대 3개) 첫번째 썸네일, 나머지 상품설명
             </h2>
 
             <div className="space-y-3">

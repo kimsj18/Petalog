@@ -31,7 +31,6 @@ public class adminProductNewController {
 
     @PreAuthorize("hasAnyRole('ROLE_ADMIN')")
     @PostMapping("/products/new")
-
     public ResponseEntity<Map<String, Object>> adminProductsNew(
             @ModelAttribute ProductNewDto data, 
             @RequestPart(required = false) List<MultipartFile> images) {
@@ -109,9 +108,15 @@ public class adminProductNewController {
         } catch (Exception e) {
             log.error("JSON 파싱 실패: ", e);
         }
+        log.info("상품수정 상품ID: " +data.getProductsId());
+        log.info("상품수장 상품이름: " + data.getName());
+        log.info("상품수장 상품이름: " + data.getDescription());
+        log.info("상품수장 상품이름: " + data.getBenefitDTOs());
+        log.info("상품수장 상품이름: " + data.getIngredientDTOs());
+        log.info("상품수장 상품이름: " + data.getImageUrl());
 
-        log.info(data.toString());
-        adminProductService.updateProduct(data, images);
+
+
 
         return ResponseEntity.ok(Map.of("success", true, "message", "상품수정완료"));
     }

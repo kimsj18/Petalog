@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 import java.util.List;
 
@@ -53,7 +54,25 @@ public class Products {
     @OneToMany(mappedBy = "products", fetch = FetchType.LAZY)
     private List<Ingredients> ingredients;
 
+    @BatchSize(size = 50)
     @OneToMany(mappedBy = "products", fetch = FetchType.LAZY)
     private List<ProductBenefit> benefits;
+
+    @Override
+    public String toString() {
+        return "Products{" +
+                "productsId='" + productsId + '\'' +
+                ", name='" + name + '\'' +
+                ", brand='" + brand + '\'' +
+                ", category='" + category + '\'' +
+                ", price=" + price +
+                ", description='" + description + '\'' +
+                ", snackType='" + snackType + '\'' +
+                ", quantity=" + quantity +
+                ", size=" + size +
+                ", madein='" + madein + '\'' +
+                ", imageUrl='" + imageUrl + '\'' +
+                '}';
+    }
 
 }

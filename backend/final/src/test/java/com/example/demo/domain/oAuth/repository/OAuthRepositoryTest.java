@@ -25,13 +25,13 @@ class OAuthRepositoryTest {
 
         User user = User.builder()
                 .userId("user"+UUID.randomUUID().toString())
-                .userEmail("bbb@bbb.com")
-                .userName("bbb")
+                .userEmail("aaa@aaa.com")
+                .userName("aaa")
                 .userPhone("01022223333")
                 .userEnterDay(LocalDate.now())
                 .userStatus(1)
                 .userPassword(passwordEncoder.encode("1234"))
-                .userRole("ADMIN")
+                .userRole("USER")
                 .build();
 
         oAuthRepository.save(user);

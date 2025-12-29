@@ -1,5 +1,6 @@
 package com.example.demo.security.filter;
 
+import com.example.demo.domain.oAuth.dto.UserDTO;
 import com.example.demo.util.JWTUtil;
 import com.google.gson.Gson;
 import jakarta.servlet.FilterChain;
@@ -75,12 +76,24 @@ public class JWTFilter extends OncePerRequestFilter {
 
             String email = (String) claims.get("email");
             String role = (String) claims.get("userRole");
+            String userId = (String) claims.get("userId");
+
+            UserDTO userDTO = new UserDTO(
+                    email,
+                    "",         // 비밀번호 안 씀
+                    userId,
+                    null,
+                    null,
+                    null,
+                    null,
+                    role
+            );
 
             List<GrantedAuthority> authorities =
                     List.of(new SimpleGrantedAuthority("ROLE_" + role));
 
             UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(email, null, authorities);
+                    new UsernamePasswordAuthenticationToken(userDTO, null, authorities);
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 

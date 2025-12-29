@@ -29,6 +29,7 @@ export interface Ingredient {
   ingredients_id: string;
   products_id: string;
   ingredients_name: string; // 닭, 소, 돼지 등
+  ingredients_percentage: number
 }
 
 // ========================================
