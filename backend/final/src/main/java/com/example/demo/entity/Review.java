@@ -3,6 +3,9 @@ package com.example.demo.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
+import java.util.Date;
+
 @Entity
 @Table(name = "review")
 @Getter
@@ -24,6 +27,12 @@ public class Review {
 
     @Column(name = "score", nullable = false)
     private int score;
+
+    @Column(name = "user_name", nullable = false)
+    private String userName;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDate createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "products_id", nullable = false)

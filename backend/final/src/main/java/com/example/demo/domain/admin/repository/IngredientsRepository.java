@@ -18,3 +18,4 @@ public interface IngredientsRepository extends JpaRepository<Ingredients, String
 //    List<Ingredients> findAllByProductsId(List<Products> products);
 }
 
+

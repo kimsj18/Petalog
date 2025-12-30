@@ -1,6 +1,7 @@
 package com.example.demo.domain.user.repository;
 
 import com.example.demo.domain.oAuth.repository.OAuthRepository;
+import com.example.demo.domain.user.DTO.ReviewDTO;
 import com.example.demo.entity.Products;
 import com.example.demo.entity.Review;
 import com.example.demo.entity.User;
@@ -9,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.List;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -40,8 +43,27 @@ class ReviewRepositoryTest {
         review.setProducts(products);
 
         reviewRepository.save(review);
+    }
 
+    @Test
+    void findReview(){
+        Products products = productsfindRepository.findById("PROD_1767018610056").orElseThrow();
 
+       List<Review> reviews = reviewRepository.findByProducts(products);
+
+        System.out.println(reviews);
+    }
+
+    @Test
+    void countByProducts_ProductsId(){
+        int reviewCount = reviewRepository.countByProducts_ProductsId("PROD_1767018610056");
+        System.out.println(reviewCount);
+    }
+
+    @Test
+    void avgScoreByProductId(){
+        Double reviewAvg = reviewRepository.avgScoreByProductId("PROD_1767018610056");
+        System.out.println(reviewAvg);
     }
 
 

@@ -1,5 +1,7 @@
 package com.example.demo.domain.oAuth.dto;
 
+import lombok.Data;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -7,6 +9,8 @@ import org.springframework.security.core.userdetails.User;
 import java.time.LocalDate;
 import java.util.*;
 
+
+@Getter
 public class UserDTO extends User {
 
     private String userId;

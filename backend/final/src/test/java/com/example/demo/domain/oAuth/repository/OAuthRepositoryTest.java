@@ -25,8 +25,8 @@ class OAuthRepositoryTest {
 
         User user = User.builder()
                 .userId("user"+UUID.randomUUID().toString())
-                .userEmail("aaa@aaa.com")
-                .userName("aaa")
+                .userEmail("ddd@ddd.com")
+                .userName("ddd")
                 .userPhone("01022223333")
                 .userEnterDay(LocalDate.now())
                 .userStatus(1)

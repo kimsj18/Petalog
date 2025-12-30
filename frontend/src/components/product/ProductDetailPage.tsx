@@ -2,24 +2,24 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  ArrowLeft, 
-  Star, 
+import {
+  ArrowLeft,
+  Star,
   Share2,
   ShoppingCart,
-  ChevronRight,
   AlertCircle,
   Check,
   MessageSquare,
   Package,
   Shield,
-  Truck
+  Truck, StarHalf, Stars
 } from 'lucide-react';
 import { Product, Ingredient, ProductBenefit } from '../../types';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { Container } from '../common/Container';
 import { apiClient } from '../../lib/api';
 import { ReviewForm } from './ReviewForm';
+
 
 // 이미지 URL 변환 함수: 상대 경로를 전체 URL로 변환
 const getImageUrl = (imageUrl: string | undefined | null): string => {
@@ -48,6 +48,20 @@ const getImageUrl = (imageUrl: string | undefined | null): string => {
 
 interface ProductDetailPageProps {
   productId: string;
+}
+
+interface ReviewDTO {
+  reviewId: string;
+  title: string;
+  content: string;
+  score: number;
+  userName: string;
+  createdAt: string
+}
+
+interface ReviewSummaryDTO{
+  reviewCount: number;
+  reviewAvg: number;
 }
 
 // 백엔드 응답 타입
@@ -81,8 +95,29 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
   const [quantity, setQuantity] = useState(1);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviews, setReviews] = useState<ReviewDTO[]>([]);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewLoaded, setReviewLoaded] = useState(false); // ⭐ 핵심
+  const [reviewSummary, setReviewSummary] = useState<ReviewSummaryDTO>();
+
+  const fetchReviewSummary = async() => {
+    try{
+
+      const response = await apiClient.get<ReviewSummaryDTO>(
+        `/v1/products/${productId}/reviewSummary`
+      );
+
+      setReviewSummary(response.data);
+      // console.log("리뷰스코어평균", response.data?.reviewAvg);
+    }catch(e){
+      console.error(e)
+    }
+  }
 
   useEffect(() => {
+
+
+
     const fetchProduct = async () => {
       try {
         setLoading(true);
@@ -134,6 +169,7 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
         };
 
         setProduct(convertedProduct);
+
       } catch (err) {
         console.error('상품 조회 오류:', err);
         setError(err instanceof Error ? err.message : '상품을 불러오는 중 오류가 발생했습니다.');
@@ -141,9 +177,23 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
         setLoading(false);
       }
     };
-
     fetchProduct();
   }, [productId]);
+
+
+  useEffect(() => {
+    if(productId){
+      fetchReviewSummary();
+  }
+  }, [productId]);
+
+
+  useEffect(() => {
+    if (selectedTab === 'reviews' && !reviewLoaded) {
+      fetchReviews();
+
+    }
+  }, [selectedTab]);
 
   if (loading) {
     return (
@@ -152,6 +202,27 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
       </div>
     );
   }
+
+  const fetchReviews = async () => {
+    try {
+      setReviewLoading(true);
+
+      const response = await apiClient.get<ReviewDTO[]>(
+          `/v1/products/${productId}/reviewAll`
+      );
+
+      if (!response.success || !response.data) return;
+
+      setReviews(response.data);      // ✅ 여기서 사용됨
+      setReviewLoaded(true);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
+
 
   if (error || !product) {
     return (
@@ -202,33 +273,7 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
     }
   };
 
-  // 임시 리뷰 데이터
-  const reviews = [
-    {
-      id: '1',
-      userName: '김**',
-      rating: 5,
-      date: '2024.01.15',
-      content: '우리 강아지가 너무 좋아해요! 소화도 잘 되고 알러지도 없어요.',
-      helpful: 24,
-    },
-    {
-      id: '2',
-      userName: '이**',
-      rating: 4,
-      date: '2024.01.10',
-      content: '가격 대비 품질이 좋습니다. 재구매 의사 있어요.',
-      helpful: 12,
-    },
-    {
-      id: '3',
-      userName: '박**',
-      rating: 5,
-      date: '2024.01.05',
-      content: '알러지가 있는 아이에게 딱이에요. 성분도 깔끔하고 좋습니다.',
-      helpful: 18,
-    },
-  ];
+
 
   return (
     <div className="min-h-screen bg-white overflow-y-auto">
@@ -280,10 +325,10 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
           <div className="flex items-center gap-3 mb-4">
             <div className="flex items-center gap-1">
               <Star className="size-5 fill-yellow-400 text-yellow-400" />
-              <span className="text-gray-900">{product.rating ?? 0}</span>
+              <span className="text-gray-900">{reviewSummary?.reviewAvg ?? 0}</span>
             </div>
             <span className="text-gray-500">
-              리뷰 {(product.reviewCount ?? 0).toLocaleString()}개
+              리뷰 {(reviewSummary?.reviewCount ?? 0).toLocaleString()}개
             </span>
           </div>
 
@@ -377,7 +422,7 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
                   : 'border-transparent text-gray-600'
               }`}
             >
-              리뷰 {product.reviewCount ?? 0}
+              리뷰 {reviewSummary?.reviewCount ?? 0}
             </button>
           </div>
           </Container>
@@ -565,27 +610,49 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
               {/* 리뷰 요약 */}
               <div className="bg-linear-to-br from-blue-50 to-blue-100 rounded-xl p-6">
                 <div className="text-center mb-4">
-                  <div className="text-4xl text-blue-900 mb-2">{product.rating ?? 0}</div>
+                  <div className="text-4xl text-blue-900 mb-2">{}</div>
                   <div className="flex items-center justify-center gap-1 mb-2">
-                    {[1, 2, 3, 4, 5].map(star => (
-                      <Star
-                        key={star}
-                        className={`size-5 ${
-                          star <= Math.round(product.rating ?? 0)
-                            ? 'fill-yellow-400 text-yellow-400'
-                            : 'text-gray-300'
-                        }`}
-                      />
-                    ))}
+                    {[1, 2, 3, 4, 5].map(star => {
+                      const roundedScore = reviewSummary?.reviewAvg > 0
+                          ? Math.round(reviewSummary?.reviewAvg * 2) / 2
+                          : 0;
+                      const isFull = star <= Math.floor(roundedScore);
+                      const isHalf = !isFull && star === Math.ceil(roundedScore) && roundedScore % 1 === 0.5;
+
+                      if (isFull) {
+                        return (
+                            <Star
+                                key={star}
+                                className="size-4 fill-yellow-400 text-yellow-400"
+                            />
+                        );
+                      } else if (isHalf) {
+                        return (
+                            <StarHalf
+                                key={star}
+                                className="size-4 fill-yellow-400 text-yellow-400"
+                            />
+                        );
+                      } else {
+                        return (
+                            <Star
+                                key={star}
+                                className="size-4 text-gray-300"
+                            />
+                        );
+                      }
+                    })}
                   </div>
                   <div className="text-sm text-blue-700">
-                    {(product.reviewCount ?? 0).toLocaleString()}개의 리뷰
+                    {reviewSummary?.reviewCount}개의 리뷰
+
+                    {/*{reviewSummary?.reviewAvg}이거몇?*/}
                   </div>
                 </div>
               </div>
 
               {/* 리뷰 작성 버튼 */}
-              <button 
+              <button
                 onClick={() => setShowReviewForm(true)}
                 className="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
               >
@@ -596,7 +663,7 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
               {/* 리뷰 목록 */}
               <div className="space-y-4">
                 {reviews.map(review => (
-                  <div key={review.id} className="border-b border-gray-100 pb-4 last:border-0">
+                  <div key={review.reviewId} className="border-b border-gray-100 pb-4 last:border-0">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-gray-900">{review.userName}</span>
@@ -605,7 +672,7 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
                             <Star
                               key={star}
                               className={`size-4 ${
-                                star <= review.rating
+                                star <= review.score
                                   ? 'fill-yellow-400 text-yellow-400'
                                   : 'text-gray-300'
                               }`}
@@ -613,19 +680,19 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
                           ))}
                         </div>
                       </div>
-                      <span className="text-xs text-gray-500">{review.date}</span>
+                      {/*<span className="text-xs text-gray-500">{review.title}</span>*/}
                     </div>
-                    <p className="text-sm text-gray-700 mb-3">{review.content}</p>
+                    <p className="text-sm text-gray-700 mb-3">{review.title}</p>
                     <button className="text-xs text-gray-500 hover:text-gray-700">
-                      도움이 돼요 {review.helpful}
+                       {review.content}
                     </button>
                   </div>
                 ))}
               </div>
 
-              <button className="w-full py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors">
-                리뷰 더보기
-              </button>
+              {/*<button className="w-full py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors">*/}
+              {/*  리뷰 더보기*/}
+              {/*</button>*/}
             </div>
           )}
           </div>
@@ -695,8 +762,13 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
             productId={productId}
             productName={product.name}
             onClose={() => setShowReviewForm(false)}
-            onSuccess={() => {
+            onSuccess={ async () => {
               // 리뷰 목록 새로고침 (필요시)
+              setShowReviewForm(false);
+              await fetchReviewSummary();
+              if(selectedTab === 'reviews'){
+                await fetchReviews();
+              }
               setShowReviewForm(false);
             }}
           />

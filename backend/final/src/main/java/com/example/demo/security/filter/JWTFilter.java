@@ -77,12 +77,13 @@ public class JWTFilter extends OncePerRequestFilter {
             String email = (String) claims.get("email");
             String role = (String) claims.get("userRole");
             String userId = (String) claims.get("userId");
+            String userName = (String) claims.get("name");
 
             UserDTO userDTO = new UserDTO(
                     email,
                     "",         // 비밀번호 안 씀
                     userId,
-                    null,
+                    userName,
                     null,
                     null,
                     null,
