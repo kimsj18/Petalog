@@ -12,13 +12,16 @@ import {
   MessageSquare,
   Package,
   Shield,
-  Truck, StarHalf, Stars
+  Truck, StarHalf,
+  Pencil
 } from 'lucide-react';
-import { Product, Ingredient, ProductBenefit } from '../../types';
+import { Product } from '../../types';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { Container } from '../common/Container';
 import { apiClient } from '../../lib/api';
 import { ReviewForm } from './ReviewForm';
+import { useAuthStore } from '../../stores/authStore';
+import { useCartStore } from '../../stores/cartStore';
 
 
 // 이미지 URL 변환 함수: 상대 경로를 전체 URL로 변환
@@ -51,12 +54,13 @@ interface ProductDetailPageProps {
 }
 
 interface ReviewDTO {
-  reviewId: string;
+  id: string;
   title: string;
   content: string;
   score: number;
   userName: string;
-  createdAt: string
+  userId: string;
+  createdAt: string;
 }
 
 interface ReviewSummaryDTO{
@@ -88,6 +92,8 @@ interface ProductDetailResponse {
 
 export function ProductDetailPage({ productId }: ProductDetailPageProps) {
   const router = useRouter();
+  const { user, isAuthenticated } = useAuthStore();
+  const { addToCart } = useCartStore();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +105,7 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewLoaded, setReviewLoaded] = useState(false); // ⭐ 핵심
   const [reviewSummary, setReviewSummary] = useState<ReviewSummaryDTO>();
+  const [myReview, setMyReview] = useState<ReviewDTO | null>(null);
 
   const fetchReviewSummary = async() => {
     try{
@@ -213,7 +220,27 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
 
       if (!response.success || !response.data) return;
 
-      setReviews(response.data);      // ✅ 여기서 사용됨
+      const allReviews = response.data;
+      
+      // 내 리뷰 찾기 (userId로 비교)
+      if (isAuthenticated && user?.user_id) {
+        console.log('현재 사용자 userId:', user.user_id);
+        console.log('모든 리뷰:', allReviews);
+        const foundMyReview = allReviews.find(
+          review => review.userId === user.user_id
+        );
+        console.log('찾은 내 리뷰:', foundMyReview);
+        setMyReview(foundMyReview || null);
+      } else {
+        setMyReview(null);
+      }
+
+      // 내 리뷰를 제외한 다른 리뷰들만 표시
+      const otherReviews = isAuthenticated && user?.user_id
+        ? allReviews.filter(review => review.userId !== user.user_id)
+        : allReviews;
+
+      setReviews(otherReviews);
       setReviewLoaded(true);
     } catch (e) {
       console.error(e);
@@ -250,15 +277,28 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
     router.back();
   };
 
-  const handleAddToCart = () => {
-    // TODO: API 호출
-    // await cartService.addToCart({ products_id: productId, quantity });
-    alert(`${quantity}개를 장바구니에 추가했습니다!`);
+  const handleAddToCart = async () => {
+    if (!product) return;
+    
+    try {
+      await addToCart({
+        products_id: productId,
+        quantity: quantity,
+        name: product.name,
+        brand: product.brand,
+        price: product.price ?? 0,
+        image: product.imageUrl || '',
+      });
+      alert(`${quantity}개를 장바구니에 추가했습니다.`);
+    } catch (e) {
+      console.error(e);
+      alert("장바구니에 추가 실패");
+    }
   };
 
   const handleBuyNow = () => {
-    // TODO: 결제 페이지로 이동
-    router.push('/checkout');
+    // 결제 페이지로 이동 (바로구매)
+    router.push(`/checkout?type=buyNow&productId=${productId}&quantity=${quantity}`);
   };
 
   const handleShare = () => {
@@ -494,7 +534,7 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
                   <div>
                     <h2 className="text-lg text-gray-900 mb-4">성분 분석</h2>
                     <div className="space-y-3">
-                      {product.ingredients?.slice(0, 5).map((ingredient, idx) => (
+                      {product.ingredients?.slice(0, 5).map((ingredient) => (
                           <div key={ingredient.ingredients_id}>
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-sm text-gray-900">{ingredient.ingredients_name}</span>
@@ -613,8 +653,8 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
                   <div className="text-4xl text-blue-900 mb-2">{}</div>
                   <div className="flex items-center justify-center gap-1 mb-2">
                     {[1, 2, 3, 4, 5].map(star => {
-                      const roundedScore = reviewSummary?.reviewAvg > 0
-                          ? Math.round(reviewSummary?.reviewAvg * 2) / 2
+                      const roundedScore = reviewSummary?.reviewAvg && reviewSummary.reviewAvg > 0
+                          ? Math.round(reviewSummary.reviewAvg * 2) / 2
                           : 0;
                       const isFull = star <= Math.floor(roundedScore);
                       const isHalf = !isFull && star === Math.ceil(roundedScore) && roundedScore % 1 === 0.5;
@@ -651,43 +691,94 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
                 </div>
               </div>
 
-              {/* 리뷰 작성 버튼 */}
-              <button
-                onClick={() => setShowReviewForm(true)}
-                className="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-              >
-                <MessageSquare className="size-5" />
-                리뷰 작성하기
-              </button>
+              {/* 내 리뷰 섹션 */}
+              {isAuthenticated && myReview ? (
+                <div className="border-2 border-blue-200 rounded-lg p-4 mb-4 relative">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-900">{myReview.userName}</span>
+                      <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                        내 리뷰
+                      </span>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <Star
+                            key={star}
+                            className={`size-4 ${
+                              star <= myReview.score
+                                ? 'fill-yellow-400 text-yellow-400'
+                                : 'text-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-700 mb-3">{myReview.title}</p>
+                  <button className="text-xs text-gray-500 hover:text-gray-700">
+                    {myReview.content}
+                  </button>
+                  <button
+                    onClick={() => setShowReviewForm(true)}
+                    className="absolute bottom-4 right-4 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-lg"
+                    title="리뷰 수정"
+                  >
+                    <Pencil className="size-4" />
+                  </button>
+                </div>
+              ) : isAuthenticated ? (
+                // 리뷰 작성 버튼 (내 리뷰가 없을 때만 표시)
+                <button
+                  onClick={() => setShowReviewForm(true)}
+                  className="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <MessageSquare className="size-5" />
+                  리뷰 작성하기
+                </button>
+              ) : (
+                // 로그인하지 않은 경우
+                <div className="w-full bg-gray-100 text-gray-600 py-3 rounded-xl text-center">
+                  리뷰를 작성하려면 로그인이 필요합니다.
+                </div>
+              )}
 
-              {/* 리뷰 목록 */}
+              {/* 리뷰 목록 (내 리뷰 제외) */}
               <div className="space-y-4">
-                {reviews.map(review => (
-                  <div key={review.reviewId} className="border-b border-gray-100 pb-4 last:border-0">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-900">{review.userName}</span>
-                        <div className="flex items-center gap-1">
-                          {[1, 2, 3, 4, 5].map(star => (
-                            <Star
-                              key={star}
-                              className={`size-4 ${
-                                star <= review.score
-                                  ? 'fill-yellow-400 text-yellow-400'
-                                  : 'text-gray-300'
-                              }`}
-                            />
-                          ))}
+                {reviewLoading ? (
+                  <div className="text-center py-8 text-gray-500">리뷰를 불러오는 중...</div>
+                ) : reviews.length > 0 ? (
+                  reviews.map(review => (
+                    <div key={review.id} className="border-b border-gray-100 pb-4 last:border-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-900">{review.userName}</span>
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map(star => (
+                              <Star
+                                key={star}
+                                className={`size-4 ${
+                                  star <= review.score
+                                    ? 'fill-yellow-400 text-yellow-400'
+                                    : 'text-gray-300'
+                                }`}
+                              />
+                            ))}
+                          </div>
                         </div>
                       </div>
-                      {/*<span className="text-xs text-gray-500">{review.title}</span>*/}
+                      <p className="text-sm text-gray-700 mb-3">{review.title}</p>
+                      <button className="text-xs text-gray-500 hover:text-gray-700">
+                        {review.content}
+                      </button>
                     </div>
-                    <p className="text-sm text-gray-700 mb-3">{review.title}</p>
-                    <button className="text-xs text-gray-500 hover:text-gray-700">
-                       {review.content}
-                    </button>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    {isAuthenticated && myReview 
+                      ? '다른 리뷰가 없습니다.' 
+                      : '아직 리뷰가 없습니다.'}
                   </div>
-                ))}
+                )}
               </div>
 
               {/*<button className="w-full py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors">*/}
@@ -756,20 +847,24 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
           </Container>
         </div>
 
-        {/* 리뷰 작성 폼 모달 */}
+        {/* 리뷰 작성/수정 폼 모달 */}
         {showReviewForm && product && (
           <ReviewForm
             productId={productId}
             productName={product.name}
+            reviewId={myReview?.id}
+            initialData={myReview ? {
+              title: myReview.title,
+              content: myReview.content,
+              score: myReview.score,
+            } : undefined}
             onClose={() => setShowReviewForm(false)}
             onSuccess={ async () => {
-              // 리뷰 목록 새로고침 (필요시)
+              // 리뷰 목록 새로고침
               setShowReviewForm(false);
+              setReviewLoaded(false); // 리뷰 다시 불러오기 위해 리셋
               await fetchReviewSummary();
-              if(selectedTab === 'reviews'){
-                await fetchReviews();
-              }
-              setShowReviewForm(false);
+              await fetchReviews(); // 리뷰 탭이 아니어도 불러오기 (다음에 탭 클릭 시 표시)
             }}
           />
         )}

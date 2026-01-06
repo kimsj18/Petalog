@@ -33,7 +33,7 @@ public class User {
     @Column(name = "user_oauth_provider", length = 20)
     private String userOauthProvider;
 
-    @Column(name = "user_oauth_id", length = 20)
+    @Column(name = "user_oauth_id", length = 100)
     private String userOauthId;
 
     @Column(name = "user_enter_day", nullable = false)

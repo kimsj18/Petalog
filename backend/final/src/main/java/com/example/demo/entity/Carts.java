@@ -16,14 +16,14 @@ public class Carts {
     @Column(name = "cart_id", length = 25, nullable = false)
     private String cartId;
 
-    @Column(name = "quantity", nullable = false)
-    private int quantity;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "products_id", nullable = false)
-    private Products products;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @Override
+    public String toString() {
+        return "Carts{" +
+               "cartId: " + cartId +
+                '}';
+    }
 }

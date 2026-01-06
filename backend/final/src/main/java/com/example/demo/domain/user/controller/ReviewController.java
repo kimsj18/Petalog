@@ -55,4 +55,19 @@ public class ReviewController {
         return reviewService.reviewSummaryFind(productId);
     }
 
+    /***
+     * 리뷰수정
+     */
+    @PutMapping("/user/products/reviews/{reviewId}")
+    public void updateReview(
+            @RequestBody ReviewDTO reviewDTO,
+            @PathVariable String reviewId
+    ){
+        log.info("-------------------리뷰수정 확인-----------------");
+        log.info(reviewId);
+        log.info(reviewDTO.getUserName());
+
+
+    }
+
 }

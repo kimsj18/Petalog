@@ -161,13 +161,11 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
   const countries = ['한국', '미국', '캐나다', '뉴질랜드', '호주', '독일', '기타'];
   
   const availableIngredients = [
-    '닭가슴살', '소고기', '돼지고기', '오리고기', '연어', '참치',
-    '고구마', '호박', '감자', '당근', '브로콜리',
-    '글리세린', '천연향료', '비타민E', '타우린'
+    '닭가슴살', '소고기', '돼지고기', '오리고기', '연어', '양', '고구마'
   ];
-  
+
   const availableBenefits = [
-    '치아 건강', '소화 개선', '피부 개선', '관절 건강', '면역력 강화', '체중 관리'
+    '피부 건강', '털 건강', '소화 개선', '면역력 강화', '관절 건강', '치아 건강', '뇌 건강'
   ];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -215,12 +213,6 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
       const updatedIngredients = prev.ingredients.map(ing =>
         ing.id === id ? { ...ing, [field]: value } : ing
       );
-      
-      // 비율 합계 검증
-      const totalPercentage = updatedIngredients.reduce((sum, ing) => {
-        const percentage = parseFloat(ing.percentage) || 0;
-        return sum + percentage;
-      }, 0);
       
       return {
         ...prev,
@@ -337,7 +329,7 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
         } else {
           setErrors([response.error || `제품 ${mode === 'edit' ? '수정' : '등록'}에 실패했습니다. 다시 시도해주세요.`]);
         }
-      } catch (error) {
+      } catch {
         setErrors([`제품 ${mode === 'edit' ? '수정' : '등록'} 중 오류가 발생했습니다.`]);
       }
     }
@@ -731,7 +723,7 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
             </h2>
 
             <div className="space-y-3">
-              {formData.ingredients.map((ingredient, idx) => {
+              {formData.ingredients.map((ingredient) => {
                 const currentTotal = formData.ingredients.reduce((sum, ing) => {
                   const percentage = parseFloat(ing.percentage) || 0;
                   return sum + percentage;
@@ -924,7 +916,7 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
                     <div className="border-t border-gray-200 pt-3">
                       <p className="text-sm text-gray-700 mb-2">원재료:</p>
                       <div className="space-y-1">
-                        {formData.ingredients.map((ing, idx) => (
+                        {formData.ingredients.map((ing) => (
                           <p key={ing.id} className="text-sm text-gray-600">
                             • {ing.name} {ing.percentage && `(${ing.percentage}%)`}
                           </p>

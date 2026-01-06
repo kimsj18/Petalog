@@ -1,20 +1,61 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Minus, Plus, Trash2, ShoppingCart } from 'lucide-react';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { Container } from '../common/Container';
 import { useCartStore } from '@/stores/cartStore';
-import { CartItem } from '@/types';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
+
+// 이미지 URL 변환 함수
+const getImageUrl = (imageUrl: string | undefined | null): string => {
+  if (!imageUrl) return '';
+  
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
+  
+  if (imageUrl.startsWith('/')) {
+    const backendUrl = typeof window !== 'undefined' 
+      ? (window.location.hostname === 'localhost' 
+          ? 'http://localhost:8080' 
+          : `${window.location.protocol}//${window.location.hostname}:8080`)
+      : 'http://localhost:8080';
+    return `${backendUrl}${imageUrl}`;
+  }
+  
+  return imageUrl;
+};
 
 export function CartPage() {
   const router = useRouter();
   const { items: cartItems, isLoading, loadCart, updateQuantity, removeItem } = useCartStore();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [quantityInputs, setQuantityInputs] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadCart();
   }, [loadCart]);
+
+  // 장바구니 아이템이 로드되면 입력값 초기화
+  useEffect(() => {
+    const initialInputs: Record<string, string> = {};
+    cartItems.forEach(item => {
+      initialInputs[item.id] = item.quantity.toString();
+    });
+    setQuantityInputs(initialInputs);
+  }, [cartItems]);
 
   const handleBack = () => {
     router.back();
@@ -24,21 +65,66 @@ export function CartPage() {
     if (newQuantity < 1) return;
     try {
       await updateQuantity(id, newQuantity);
-    } catch (error: any) {
-      alert(error.message || '수량 변경에 실패했습니다.');
+      setQuantityInputs(prev => ({ ...prev, [id]: newQuantity.toString() }));
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : '수량 변경에 실패했습니다.');
+      // 에러 발생 시 원래 값으로 복구
+      const item = cartItems.find(i => i.id === id);
+      if (item) {
+        setQuantityInputs(prev => ({ ...prev, [id]: item.quantity.toString() }));
+      }
     }
   };
 
-  const handleRemoveItem = async (id: string) => {
+  const handleQuantityInputChange = (id: string, value: string) => {
+    // 숫자만 입력 허용
+    if (value === '' || /^\d+$/.test(value)) {
+      setQuantityInputs(prev => ({ ...prev, [id]: value }));
+    }
+  };
+
+  const handleQuantityInputBlur = (id: string) => {
+    const inputValue = quantityInputs[id];
+    if (!inputValue || inputValue === '') {
+      // 빈 값이면 1로 설정
+      handleUpdateQuantity(id, 1);
+    } else {
+      const numValue = parseInt(inputValue, 10);
+      if (isNaN(numValue) || numValue < 1) {
+        handleUpdateQuantity(id, 1);
+      } else {
+        handleUpdateQuantity(id, numValue);
+      }
+    }
+  };
+
+  const handleQuantityInputKeyDown = (id: string, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur();
+    }
+  };
+
+  const handleRemoveClick = (id: string) => {
+    setItemToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleRemoveItem = async () => {
+    if (!itemToDelete) return;
     try {
-      await removeItem(id);
-    } catch (error: any) {
-      alert(error.message || '삭제에 실패했습니다.');
+      await removeItem(itemToDelete);
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : '삭제에 실패했습니다.');
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
     }
   };
 
   const handleCheckout = () => {
-    router.push('/checkout');
+    // 결제 페이지로 이동 (장바구니)
+    router.push('/checkout?type=cart');
   };
 
   const totalAmount = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -80,19 +166,28 @@ export function CartPage() {
           <>
             {/* Cart Items */}
             <div className="space-y-4 mb-6">
-              {cartItems.map((item) => (
+              {cartItems.map((item) => {
+                // imageUrl이 쉼표로 구분된 여러 이미지일 수 있으므로 첫 번째 이미지만 사용
+                const firstImageUrl = item.image 
+                  ? item.image.split(',')[0].trim() 
+                  : '';
+                
+                // 상대 경로를 전체 URL로 변환
+                const fullImageUrl = getImageUrl(firstImageUrl);
+
+                return (
                 <div key={item.id} className="bg-white rounded-lg border border-gray-200 p-4">
                   <div className="flex gap-4">
                     <div className="w-20 h-20 flex-shrink-0">
                       <ImageWithFallback
-                        src={item.image}
+                        src={fullImageUrl}
                         alt={item.name}
                         className="w-full h-full object-cover rounded"
                       />
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs text-blue-600 mb-1">{item.brand}</div>
+                      {/*<div className="text-xs text-blue-600 mb-1">{item.brand}</div>*/}
                       <h3 className="text-gray-900 mb-2 line-clamp-2 text-sm">{item.name}</h3>
                       <div className="text-gray-900 mb-3">{item.price.toLocaleString()}원</div>
                       
@@ -104,7 +199,15 @@ export function CartPage() {
                           >
                             <Minus className="size-3" />
                           </button>
-                          <span className="text-sm w-8 text-center">{item.quantity}</span>
+                          <input
+                            type="text"
+                            value={quantityInputs[item.id] || item.quantity.toString()}
+                            onChange={(e) => handleQuantityInputChange(item.id, e.target.value)}
+                            onBlur={() => handleQuantityInputBlur(item.id)}
+                            onKeyDown={(e) => handleQuantityInputKeyDown(item.id, e)}
+                            className="text-sm w-12 text-center border-0 outline-none focus:outline-none bg-transparent"
+                            min="1"
+                          />
                           <button
                             onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                             className="p-2 hover:bg-gray-100"
@@ -114,7 +217,7 @@ export function CartPage() {
                         </div>
                         
                         <button
-                          onClick={() => handleRemoveItem(item.id)}
+                          onClick={() => handleRemoveClick(item.id)}
                           className="text-gray-400 hover:text-red-500"
                         >
                           <Trash2 className="size-4" />
@@ -128,7 +231,8 @@ export function CartPage() {
                     <span className="text-gray-900">{(item.price * item.quantity).toLocaleString()}원</span>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Price Summary */}
@@ -179,6 +283,29 @@ export function CartPage() {
         )}
       </div>
       </Container>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="bg-white border-gray-200">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-gray-900">상품 삭제</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-600">
+              정말로 이 상품을 장바구니에서 삭제하시겠습니까?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50">
+              아니오
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRemoveItem}
+              className="bg-blue-600 text-white hover:bg-blue-700"
+            >
+              예
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

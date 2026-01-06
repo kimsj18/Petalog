@@ -56,8 +56,25 @@ public class IdGenerator {
         return "USR-" + nextId();
     }
 
-    // 리뷰 ID 생성 (인플루언서 인증)
+    // 리뷰 ID 생성
     public static String reviewId(){return "rev-" + nextId();}
 
+    // 카트 ID 생성
+    public static String cartId(){return "cart-" + nextId();}
+
+    //카트아이템 ID 생성
+    public static String cartItemId(){return "cartItem-" + nextId();}
+
+    //주소 ID 생성
+    public static String addressId(){return "address-" + nextId();}
+
+    //결제 ID 생성
+    public static String paymentId(){return "pay-" + nextId();}
+
+    //주문 ID 생성
+    public static String orderId(){return "ord-" + nextId();}
+
+    //주문 항목 ID 생성
+    public static String orderItemId(){return "ordItem-" + nextId();}
 
 }

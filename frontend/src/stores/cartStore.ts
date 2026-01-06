@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { cartService, AddToCartRequest } from '@/services/cartService';
-import { CartItem, Cart } from '@/types';
+import {CartItem, CartItemListDTO} from '@/types';
 
 interface CartState {
   items: CartItem[];
@@ -13,18 +13,18 @@ interface CartState {
   updateQuantity: (cartId: string, quantity: number) => Promise<void>;
   removeItem: (cartId: string) => Promise<void>;
   clearCart: () => Promise<void>;
+  resetCart: () => void; // 로컬 상태만 초기화 (API 호출 없음)
 }
 
 // Cart를 CartItem으로 변환하는 헬퍼 함수
-const convertCartToCartItem = (cart: Cart): CartItem => {
-  return {
-    id: cart.cart_id,
-    products_id: cart.products_id,
-    name: cart.product?.name || '상품명',
-    brand: cart.product?.brand || '브랜드',
-    price: cart.product?.price || 0,
-    image: cart.product?.imageUrl || '',
-    quantity: cart.quantity,
+const convertCartToCartItem = (cart: CartItemListDTO): CartItem => {
+    return {
+      id: cart.cartItemId,
+      products_id: cart.productId,
+      name: cart.productName,
+      price: cart.price,
+      image: cart.imageUrl || '',
+      quantity: cart.quantity,
   };
 };
 
@@ -65,7 +65,7 @@ export const useCartStore = create<CartState>()(
           } else {
             throw new Error(response.error || '장바구니 추가에 실패했습니다.');
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           set({ isLoading: false });
           throw error;
         }
@@ -89,7 +89,7 @@ export const useCartStore = create<CartState>()(
           } else {
             throw new Error(response.error || '수량 변경에 실패했습니다.');
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           set({ isLoading: false });
           throw error;
         }
@@ -108,7 +108,7 @@ export const useCartStore = create<CartState>()(
           } else {
             throw new Error(response.error || '삭제에 실패했습니다.');
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           set({ isLoading: false });
           throw error;
         }
@@ -124,10 +124,15 @@ export const useCartStore = create<CartState>()(
           } else {
             throw new Error(response.error || '장바구니 비우기에 실패했습니다.');
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           set({ isLoading: false });
           throw error;
         }
+      },
+
+      resetCart: () => {
+        // 로컬 상태만 초기화 (API 호출 없음, 로그아웃 시 사용)
+        set({ items: [], isLoading: false });
       },
     }),
     {

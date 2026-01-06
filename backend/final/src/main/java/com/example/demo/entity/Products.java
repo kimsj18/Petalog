@@ -58,6 +58,9 @@ public class Products {
     @OneToMany(mappedBy = "products", fetch = FetchType.LAZY)
     private List<ProductBenefit> benefits;
 
+    @OneToMany(mappedBy = "products", fetch = FetchType.LAZY)
+    private List<CartItem> cartItem;
+
     @Override
     public String toString() {
         return "Products{" +

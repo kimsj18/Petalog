@@ -1,23 +1,38 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Star, X } from 'lucide-react';
-import { reviewService, CreateReviewRequest } from '@/services/reviewService';
+import { reviewService, CreateReviewRequest, UpdateReviewRequest } from '@/services/reviewService';
 
 interface ReviewFormProps {
   productId: string;
   productName: string;
+  reviewId?: string; // 수정 모드일 때 리뷰 ID
+  initialData?: {
+    title: string;
+    content: string;
+    score: number;
+  };
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export function ReviewForm({ productId, productName, onClose, onSuccess }: ReviewFormProps) {
-  const [score, setScore] = useState(0);
+export function ReviewForm({ productId, productName, reviewId, initialData, onClose, onSuccess }: ReviewFormProps) {
+  const isEditMode = !!reviewId;
+  const [score, setScore] = useState(initialData?.score || 0);
   const [hoveredScore, setHoveredScore] = useState(0);
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [title, setTitle] = useState(initialData?.title || '');
+  const [content, setContent] = useState(initialData?.content || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialData) {
+      setScore(initialData.score);
+      setTitle(initialData.title);
+      setContent(initialData.content);
+    }
+  }, [initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,23 +61,42 @@ export function ReviewForm({ productId, productName, onClose, onSuccess }: Revie
     setError(null);
 
     try {
-      const reviewData: CreateReviewRequest = {
-        products_id: productId,
-        title: title.trim(),
-        content: content.trim(),
-        score: score,
-      };
+      if (isEditMode && reviewId) {
+        // 수정 모드
+        const updateData: UpdateReviewRequest = {
+          title: title.trim(),
+          content: content.trim(),
+          score: score,
+        };
 
-      const response = await reviewService.createReview(reviewData);
-      
-      if (response.success) {
-        onSuccess();
-        onClose();
+        const response = await reviewService.updateReview(reviewId, updateData);
+        
+        if (response.success) {
+          onSuccess();
+          onClose();
+        } else {
+          setError(response.error || '리뷰 수정에 실패했습니다.');
+        }
       } else {
-        setError(response.error || '리뷰 작성에 실패했습니다.');
+        // 작성 모드
+        const reviewData: CreateReviewRequest = {
+          products_id: productId,
+          title: title.trim(),
+          content: content.trim(),
+          score: score,
+        };
+
+        const response = await reviewService.createReview(reviewData);
+        
+        if (response.success) {
+          onSuccess();
+          onClose();
+        } else {
+          setError(response.error || '리뷰 작성에 실패했습니다.');
+        }
       }
-    } catch (err) {
-      setError('리뷰 작성 중 오류가 발생했습니다.');
+    } catch {
+      setError(isEditMode ? '리뷰 수정 중 오류가 발생했습니다.' : '리뷰 작성 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -74,7 +108,7 @@ export function ReviewForm({ productId, productName, onClose, onSuccess }: Revie
         <div className="p-6">
           {/* 헤더 */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">리뷰 작성</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{isEditMode ? '리뷰 수정' : '리뷰 작성'}</h2>
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -188,7 +222,7 @@ export function ReviewForm({ productId, productName, onClose, onSuccess }: Revie
                 className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 disabled={loading}
               >
-                {loading ? '작성 중...' : '리뷰 등록'}
+                {loading ? (isEditMode ? '수정 중...' : '작성 중...') : (isEditMode ? '리뷰 수정' : '리뷰 등록')}
               </button>
             </div>
           </form>

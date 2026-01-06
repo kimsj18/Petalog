@@ -40,7 +40,7 @@ export const userService = {
    * PUT /users/me
    */
   async updateMyProfile(data: Partial<User>): Promise<ApiResponse<void>> {
-    return apiClient.put<void>('/users/me', data);
+    return apiClient.put<void>('/users/me', data as unknown as Record<string, unknown>);
   },
 
   // ========================================
@@ -60,7 +60,7 @@ export const userService = {
    * POST /users/addresses
    */
   async createAddress(data: CreateAddressRequest): Promise<ApiResponse<{ address_id: string }>> {
-    return apiClient.post<{ address_id: string }>('/users/addresses', data);
+    return apiClient.post<{ address_id: string }>('/users/addresses', data as unknown as Record<string, unknown>);
   },
 
   /**
@@ -68,7 +68,7 @@ export const userService = {
    * PUT /users/addresses/{id}
    */
   async updateAddress(addressId: string, data: Partial<CreateAddressRequest>): Promise<ApiResponse<void>> {
-    return apiClient.put<void>(`/users/addresses/${addressId}`, data);
+    return apiClient.put<void>(`/users/addresses/${addressId}`, data as unknown as Record<string, unknown>);
   },
 
   /**
@@ -104,7 +104,7 @@ export const userService = {
    * POST /users/pets
    */
   async createPet(data: CreatePetRequest): Promise<ApiResponse<{ pets_id: string }>> {
-    return apiClient.post<{ pets_id: string }>('/users/pets', data);
+    return apiClient.post<{ pets_id: string }>('/users/pets', data as unknown as Record<string, unknown>);
   },
 
   /**
@@ -112,7 +112,7 @@ export const userService = {
    * PUT /users/pets/{id}
    */
   async updatePet(petId: string, data: Partial<CreatePetRequest>): Promise<ApiResponse<void>> {
-    return apiClient.put<void>(`/users/pets/${petId}`, data);
+    return apiClient.put<void>(`/users/pets/${petId}`, data as unknown as Record<string, unknown>);
   },
 
   /**

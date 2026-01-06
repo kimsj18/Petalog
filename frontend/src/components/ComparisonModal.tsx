@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { X, Star, ShoppingCart, Check, Minus } from 'lucide-react';
+import { X, ShoppingCart, Check } from 'lucide-react';
 import { Product } from '../types';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 

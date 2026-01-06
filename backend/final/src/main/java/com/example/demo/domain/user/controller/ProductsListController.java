@@ -33,4 +33,16 @@ public class ProductsListController {
         log.info(productId);
         return productsListService.findDetailByProductId(productId);
     }
+
+    @GetMapping("/productList/ingredient")
+    public List<ProductDetailDTO> findAllWithIngredient(@RequestParam String ingredient){
+        log.info("ingredient" + ingredient);
+        return productsListService.findAllWithIngredient(ingredient);
+    }
+
+    @GetMapping("/productList/search")
+    public List<ProductDetailDTO> searchByNameOrBrand(@RequestParam String keyword){
+        log.info(keyword);
+        return productsListService.searchByNameOrBrand(keyword);
+    }
 }

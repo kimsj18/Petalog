@@ -157,7 +157,25 @@ export function PopularComparisons({ onSelectProducts }: PopularComparisonsProps
         {popularComparisons.map(comparison => (
           <div
             key={comparison.id}
-            onClick={() => onSelectProducts(comparison.products)}
+            onClick={() => {
+              // Mock 데이터를 Product 타입으로 변환
+              const convertedProducts: Product[] = comparison.products.map(p => ({
+                products_id: p.id,
+                name: p.name,
+                brand: p.brand,
+                category: '간식', // 기본값
+                snack_type: '트릿', // 기본값
+                imageUrl: p.image,
+                quantity: 1, // 기본값
+                price: p.price,
+                rating: p.rating,
+                reviewCount: p.reviewCount,
+                size: p.size,
+                madeIn: p.madeIn,
+                ageGroup: p.ageGroup,
+              }));
+              onSelectProducts(convertedProducts);
+            }}
             className="bg-white rounded-lg border border-gray-200 p-4 cursor-pointer hover:shadow-lg hover:border-blue-300 transition-all group"
           >
             <div className="flex items-start justify-between mb-3">

@@ -22,7 +22,8 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class ProductsListServiceImpl implements ProductsListService{
+public class ProductsListServiceImpl implements ProductsListService {
+
 
     private final ProductsfindRepository productsfindRepository;
     private final IngredientListRepository ingredientListRepository;
@@ -33,17 +34,17 @@ public class ProductsListServiceImpl implements ProductsListService{
 
         List<Products> products = productsfindRepository.findAllWithCategory(category.toString());
 
-        List<String > productsId = new ArrayList<>();
-        for(Products p : products){
+        List<String> productsId = new ArrayList<>();
+        for (Products p : products) {
             productsId.add(p.getProductsId());
         }
 
         List<Ingredients> ingredients = ingredientListRepository.findByProducts_ProductsIdIn(productsId);
         List<ProductBenefit> benefits = benefitListRepository.findByProducts_ProductsIdIn(productsId);
 
-        Map<String , List<IngredientDTO>> ingredientMap = new HashMap<>();
+        Map<String, List<IngredientDTO>> ingredientMap = new HashMap<>();
 
-        for (Ingredients i : ingredients){
+        for (Ingredients i : ingredients) {
             String productId = i.getProducts().getProductsId();
 
             ingredientMap.putIfAbsent(productId, new ArrayList<>());
@@ -55,9 +56,9 @@ public class ProductsListServiceImpl implements ProductsListService{
             );
         }
 
-        Map<String , List<BenefitDTO>> benefitMap = new HashMap<>();
+        Map<String, List<BenefitDTO>> benefitMap = new HashMap<>();
 
-        for(ProductBenefit b : benefits){
+        for (ProductBenefit b : benefits) {
             String productId = b.getProducts().getProductsId();
 
             benefitMap.putIfAbsent(productId, new ArrayList<>());
@@ -68,17 +69,9 @@ public class ProductsListServiceImpl implements ProductsListService{
             );
         }
 
-
-        // then
-//        products.forEach(p -> {
-//            System.out.println(p.getProductsId());
-//            System.out.println(p.getName());
-//            System.out.println(p.getCategory());
-//        });
-
         List<ProductDetailDTO> result = new ArrayList<>();
 
-        for(Products p : products){
+        for (Products p : products) {
             result.add(new ProductDetailDTO(
                     p.getProductsId(),
                     p.getName(),
@@ -129,6 +122,78 @@ public class ProductsListServiceImpl implements ProductsListService{
         return dto;
     }
 
+    @Override
+    public List<ProductDetailDTO> findAllWithIngredient(String ingredient) {
+        List<Products> products = productsfindRepository.findAllWithIngredient(ingredient);
+
+        List<ProductDetailDTO> productDetailDTOS = products.stream()
+                .map(p -> {
+                    List<IngredientDTO> ingredientDTOS = p.getIngredients().stream()
+                            .map(i -> new IngredientDTO(i.getIngredientsName(), i.getIngredientsPercentage()))
+                            .toList();
+
+                    List<BenefitDTO> benefitDTOS = p.getBenefits().stream()
+                            .map(b -> new BenefitDTO(b.getBenefitName()))
+                            .toList();
+
+                    ProductDetailDTO dto = new ProductDetailDTO(
+                            p.getProductsId(),
+                            p.getName(),
+                            p.getBrand(),
+                            p.getCategory(),
+                            p.getSnackType(),
+                            p.getImageUrl(),
+                            p.getMadein(),
+                            p.getQuantity(),
+                            p.getSize(),
+                            p.getPrice(),
+                            p.getDescription(),
+                            ingredientDTOS,
+                            benefitDTOS
+                    );
+                    return dto;
+                }).toList();
+//        System.out.println(productDetailDTOS);
+        return productDetailDTOS;
+    }
+
+    @Override
+    public List<ProductDetailDTO> searchByNameOrBrand(String keyword) {
+
+        List<Products> products = productsfindRepository.searchByNameOrBrand(keyword);
+
+        List<ProductDetailDTO> productDetailDTOS = products.stream()
+                .map(p -> {
+                    List<IngredientDTO> ingredientDTOS = p.getIngredients().stream()
+                            .map(i -> new IngredientDTO(i.getIngredientsName(), i.getIngredientsPercentage()))
+                            .toList();
+
+                    List<BenefitDTO> benefitDTOS = p.getBenefits().stream()
+                            .map(b -> new BenefitDTO(b.getBenefitName())).toList();
+
+                    return new ProductDetailDTO(
+                            p.getProductsId(),
+                            p.getName(),
+                            p.getBrand(),
+                            p.getCategory(),
+                            p.getSnackType(),
+                            p.getImageUrl(),
+                            p.getMadein(),
+                            p.getQuantity(),
+                            p.getSize(),
+                            p.getPrice(),
+                            p.getDescription(),
+                            ingredientDTOS,
+                            benefitDTOS
+                    );
+                }).toList();
+
+        return productDetailDTOS;
+    }
 
 }
+
+
+
+
 

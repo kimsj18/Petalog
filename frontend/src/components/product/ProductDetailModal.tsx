@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { X, Star, ShoppingCart, Heart, Share2 } from 'lucide-react';
-import { Product } from '../App';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+import { Product } from '../../types';
+import { ImageWithFallback } from '../figma/ImageWithFallback';
 
 interface ProductDetailModalProps {
   product: Product;
@@ -11,7 +11,7 @@ interface ProductDetailModalProps {
 }
 
 export function ProductDetailModal({ product, onClose }: ProductDetailModalProps) {
-  const discountRate = product.originalPrice
+  const discountRate = product.originalPrice && product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
@@ -33,7 +33,7 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
             {/* Product Image */}
             <div className="relative aspect-square rounded-lg overflow-hidden">
               <ImageWithFallback
-                src={product.image}
+                src={product.imageUrl}
                 alt={product.name}
                 className="w-full h-full object-cover"
               />
@@ -55,7 +55,7 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
                   <span className="text-gray-900">{product.rating}</span>
                 </div>
                 <span className="text-gray-500">
-                  리뷰 {product.reviewCount.toLocaleString()}개
+                  리뷰 {product.reviewCount?.toLocaleString() || 0}개
                 </span>
               </div>
 
@@ -66,54 +66,60 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
                   </span>
                 )}
                 <span className="text-gray-900">
-                  {product.price.toLocaleString()}원
+                  {product.price?.toLocaleString() || '가격 정보 없음'}원
                 </span>
               </div>
 
               <div className="space-y-4 mb-6">
-                <div className="flex gap-2">
-                  <span className="text-gray-500 w-24 flex-shrink-0">용량</span>
-                  <span className="text-gray-900">{product.size}</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="text-gray-500 w-24 flex-shrink-0">원산지</span>
-                  <span className="text-gray-900">{product.madeIn}</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="text-gray-500 w-24 flex-shrink-0">적합연령</span>
-                  <span className="text-gray-900">{product.ageGroup.join(', ')}</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="text-gray-500 w-24 flex-shrink-0">추천크기</span>
-                  <span className="text-gray-900">{product.bestFor.join(', ')}</span>
-                </div>
+                {product.size && (
+                  <div className="flex gap-2">
+                    <span className="text-gray-500 w-24 flex-shrink-0">용량</span>
+                    <span className="text-gray-900">{product.size}</span>
+                  </div>
+                )}
+                {product.madeIn && (
+                  <div className="flex gap-2">
+                    <span className="text-gray-500 w-24 flex-shrink-0">원산지</span>
+                    <span className="text-gray-900">{product.madeIn}</span>
+                  </div>
+                )}
+                {product.ageGroup && product.ageGroup.length > 0 && (
+                  <div className="flex gap-2">
+                    <span className="text-gray-500 w-24 flex-shrink-0">적합연령</span>
+                    <span className="text-gray-900">{product.ageGroup.join(', ')}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="mb-6">
-                <h4 className="text-gray-900 mb-3">효능</h4>
-                <div className="flex flex-wrap gap-2">
-                  {product.benefits.map(benefit => (
-                    <span
-                      key={benefit}
-                      className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full"
-                    >
-                      {benefit}
-                    </span>
-                  ))}
+              {product.benefits && product.benefits.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-gray-900 mb-3">효능</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {product.benefits.map((benefit, index) => (
+                      <span
+                        key={index}
+                        className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full"
+                      >
+                        {typeof benefit === 'string' ? benefit : benefit.benefit_name}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="mb-6">
-                <h4 className="text-gray-900 mb-3">주요 성분</h4>
-                <ul className="space-y-2">
-                  {product.ingredients.map((ingredient, index) => (
-                    <li key={index} className="text-gray-700 flex items-start gap-2">
-                      <span className="text-blue-600 mt-1">•</span>
-                      <span>{ingredient}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {product.ingredients && product.ingredients.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-gray-900 mb-3">주요 성분</h4>
+                  <ul className="space-y-2">
+                    {product.ingredients.map((ingredient, index) => (
+                      <li key={index} className="text-gray-700 flex items-start gap-2">
+                        <span className="text-blue-600 mt-1">•</span>
+                        <span>{typeof ingredient === 'string' ? ingredient : ingredient.ingredients_name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <div className="flex gap-3">
                 <button className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">

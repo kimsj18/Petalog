@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, ChevronRight, ChevronDown } from 'lucide-react';
+import { ChevronRight, ChevronDown } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Product } from '../types';
 import { Container } from './common/Container';
@@ -63,14 +63,14 @@ interface ProductDetailDTO {
 }
 
 export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('treat');
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [apiProducts, setApiProducts] = useState<ProductDetailDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
  
   const categories = [
-    { id: 'all', name: '카테고리 전체' },
+    // { id: 'all', name: '카테고리 전체' },
     { id: 'treat', name: '트릿/큐브' },
     { id: 'jerky', name: '육포/저키' },
     { id: 'churu', name: '츄르/액상' },
@@ -81,11 +81,6 @@ export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
   // 카테고리별 랭킹 데이터 가져오기
   useEffect(() => {
     const fetchCategoryRanking = async () => {
-      // 'all' 카테고리는 API 호출하지 않음 (mock 데이터 사용)
-      if (selectedCategory === 'all') {
-        setApiProducts([]);
-        return;
-      }
 
       try {
         setLoading(true);
@@ -295,7 +290,7 @@ export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
     productData?: ProductDetailDTO; // API 응답 데이터인 경우
   };
 
-  const currentProducts: DisplayProduct[] = selectedCategory === 'all' 
+  const currentProducts: DisplayProduct[] = selectedCategory === 'all'
     ? categoryProducts.all.map(item => ({
         rank: item.rank,
         change: item.change,
@@ -328,7 +323,7 @@ export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
         })
       : [];
   
-  const currentCategoryName = categories.find(c => c.id === selectedCategory)?.name || '카테고리 전체';
+  const currentCategoryName = categories.find(c => c.id === selectedCategory)?.name || '트릿/큐브';
 
   const getRankBadgeColor = (rank: number) => {
     if (rank === 1) return 'bg-yellow-500';
@@ -371,6 +366,7 @@ export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
           ingredients_id: '',
           products_id: product.productsId,
           ingredients_name: ing.name,
+          ingredients_percentage: ing.percentage || 0,
         })),
         benefits: product.benefitDTOs.map(ben => ({
           benefit_id: '',
@@ -388,7 +384,7 @@ export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
       products_id: id,
       name: item.name,
       brand: item.brand,
-      category: selectedCategory === 'all' ? 'all' : selectedCategory,
+      category: selectedCategory === 'treat' ? 'treat' : selectedCategory,
       snack_type: '',
       imageUrl: item.image,
       quantity: 0,
@@ -460,7 +456,7 @@ export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
       <div>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <div className="text-gray-500 text-sm mb-1">화해 고객들이 직접 <span className="text-cyan-500">선택한 랭킹</span></div>
+            <div className="text-gray-500 text-sm mb-1">화해 고객들이 직접 <span className="text-cyan-500">선택한 카테고리 랭킹</span></div>
           </div>
           <ChevronRight className="size-5 text-gray-400" />
         </div>
@@ -560,10 +556,10 @@ export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
         )}
 
         {/* 카테고리 전체보기 버튼 */}
-        <button className="w-full mt-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1">
-          카테고리 전체보기
-          <ChevronRight className="size-4" />
-        </button>
+        {/*<button className="w-full mt-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1">*/}
+        {/*  카테고리 전체보기*/}
+        {/*  <ChevronRight className="size-4" />*/}
+        {/*</button>*/}
       </div>
     </div>
     </Container>

@@ -26,4 +26,21 @@ public interface ProductsfindRepository extends JpaRepository<Products, String >
     where p.productsId = :productId
 """)
     Optional<Products> findDetailById(@Param("productId") String productId);
+
+    @Query("""
+        select distinct p
+        from Products p
+        join p.ingredients i
+        where i.ingredientsName = :ingredient
+""")
+    List<Products> findAllWithIngredient(@Param("ingredient") String ingredient);
+
+    @Query("""
+        select distinct p
+        from Products p
+        left join fetch p.ingredients
+        where p.name like %:keyword%
+            or p.brand like %:keyword%
+""")
+    List<Products> searchByNameOrBrand(@Param("keyword") String keyword);
 }

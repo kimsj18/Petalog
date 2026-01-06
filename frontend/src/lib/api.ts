@@ -46,7 +46,12 @@ class ApiClient {
     }
     
     // 하위 호환성을 위해 기존 방식도 확인
-    return localStorage.getItem('accessToken');
+    try {
+      return localStorage.getItem('accessToken');
+    } catch (error) {
+      console.error('Failed to get accessToken from storage:', error);
+      return null;
+    }
   }
 
   // 토큰 설정
@@ -356,7 +361,10 @@ class ApiClient {
   }
 
   // GET 요청
-  async get<T>(endpoint: string, params?: Record<string, any>): Promise<ApiResponse<T>> {
+  async get<T>(
+    endpoint: string,
+    params?: Record<string, string | number | boolean | null | undefined>
+  ): Promise<ApiResponse<T>> {
     return this.handle401Error(endpoint, async () => {
       try {
         const url = new URL(`${this.baseURL}${endpoint}`);
@@ -410,18 +418,22 @@ class ApiClient {
           success: true,
           data: data as T,
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`GET ${endpoint} error:`, error);
         return {
           success: false,
-          error: error.message || '네트워크 오류가 발생했습니다.',
+          error: error instanceof Error ? error.message : '네트워크 오류가 발생했습니다.',
         };
       }
     });
   }
 
   // POST 요청
-  async post<T>(endpoint: string, body?: any, isFormData: boolean = false): Promise<ApiResponse<T>> {
+  async post<T>(
+    endpoint: string,
+    body?: Record<string, unknown> | FormData | string,
+    isFormData: boolean = false
+  ): Promise<ApiResponse<T>> {
     return this.handle401Error(endpoint, async () => {
       try {
         let headers: Record<string, string>;
@@ -494,18 +506,18 @@ class ApiClient {
           success: true,
           data: data as T,
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`POST ${endpoint} error:`, error);
         return {
           success: false,
-          error: error.message || '네트워크 오류가 발생했습니다.',
+          error: error instanceof Error ? error.message : '네트워크 오류가 발생했습니다.',
         };
       }
     });
   }
 
   // PUT 요청
-  async put<T>(endpoint: string, body?: any): Promise<ApiResponse<T>> {
+  async put<T>(endpoint: string, body?: Record<string, unknown>): Promise<ApiResponse<T>> {
     return this.handle401Error(endpoint, async () => {
       try {
         const response = await fetch(`${this.baseURL}${endpoint}`, {
@@ -546,11 +558,11 @@ class ApiClient {
           success: true,
           data: data as T,
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`PUT ${endpoint} error:`, error);
         return {
           success: false,
-          error: error.message || '네트워크 오류가 발생했습니다.',
+          error: error instanceof Error ? error.message : '네트워크 오류가 발생했습니다.',
         };
       }
     });
@@ -597,11 +609,11 @@ class ApiClient {
           success: true,
           data: data as T,
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`DELETE ${endpoint} error:`, error);
         return {
           success: false,
-          error: error.message || '네트워크 오류가 발생했습니다.',
+          error: error instanceof Error ? error.message : '네트워크 오류가 발생했습니다.',
         };
       }
     });

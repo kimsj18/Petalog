@@ -45,4 +45,22 @@ class ProductsListServiceImplTest {
         ProductDetailDTO result = productsListService.findDetailByProductId(productId);
         assertNotNull(result);
     }
+
+
+    @Test
+    @DisplayName("유저 - 상품 원재료별 조회")
+    void findAllWithIngredient(){
+        String ingredient = new String("닭고기");
+        List<ProductDetailDTO> r = productsListService.findAllWithIngredient(ingredient);
+        System.out.println(r);
+    }
+
+    @Test
+    @DisplayName("유저 - 상품 검색")
+    void searchByNameOrBrand(){
+        String keyword = "이것";
+        System.out.println(keyword);
+        List<ProductDetailDTO> productDetailDTOS = productsListService.searchByNameOrBrand(keyword);
+        System.out.println(productDetailDTOS);
+    }
 }

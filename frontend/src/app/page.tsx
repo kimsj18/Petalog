@@ -1,36 +1,27 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
-import { Header } from '../components/common/Header';
-import { Hero } from '../components/Hero';
+
+export const dynamic = 'force-dynamic';
+import { Search } from '../components/common/Search';
 import { TrendingRanking } from '../components/TrendingRanking';
 import { AllergyComparison } from '../components/AllergyComparison';
-import { SnackTypeComparison } from '../components/SnackTypeComparison';
-import { ProductGrid } from '../components/product/ProductGrid';
 import { ComparisonModal } from '../components/ComparisonModal';
-import { FilterSidebar } from '../components/FilterSidebar';
-import { Product, ProductFilters } from '../types';
+import { Product } from '../types';
+
+function SearchWrapper() {
+  return (
+    <Suspense fallback={<div className="pb-4"><div className="w-full h-10 bg-gray-100 rounded-lg animate-pulse" /></div>}>
+      <Search />
+    </Suspense>
+  );
+}
 
 export default function HomePage() {
   const router = useRouter();
-  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
+  const [selectedProducts] = useState<Product[]>([]);
   const [showComparison, setShowComparison] = useState(false);
-  const [showAllProducts, setShowAllProducts] = useState(false);
-  const [filters, setFilters] = useState<ProductFilters>({
-    priceRange: [0, 100000],
-    ageGroup: [],
-    benefits: [],
-    brands: [],
-  });
-
-  const handleSelectProduct = (product: Product) => {
-    if (selectedProducts.find(p => p.products_id === product.products_id)) {
-      setSelectedProducts(selectedProducts.filter(p => p.products_id !== product.products_id));
-    } else if (selectedProducts.length < 3) {
-      setSelectedProducts([...selectedProducts, product]);
-    }
-  };
 
   const handleCompare = () => {
     if (selectedProducts.length >= 2) {
@@ -44,30 +35,32 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
+      <div className="max-w-6xl mx-auto px-4 pt-4">
+        <SearchWrapper />
+      </div>
       <main>
         {/*<Hero />*/}
         <TrendingRanking onProductClick={handleProductClick} />
         <AllergyComparison onProductClick={handleProductClick} />
-        <SnackTypeComparison onProductClick={handleProductClick} />
+        {/*<SnackTypeComparison onProductClick={handleProductClick} />*/}
         
-        <section className="max-w-6xl mx-auto px-4 py-16">
-          <div className="flex gap-8">
-            <FilterSidebar
-              filters={filters}
-              onFiltersChange={setFilters}
-            />
-            <div className="flex-1">
-              <ProductGrid
-                onSelectProduct={handleSelectProduct}
-                selectedProducts={selectedProducts}
-                showAll={showAllProducts}
-                onToggleShowAll={() => setShowAllProducts(!showAllProducts)}
-                filters={filters}
-              />
-            </div>
-          </div>
-        </section>
+        {/*<section className="max-w-6xl mx-auto px-4 py-16">*/}
+        {/*  <div className="flex gap-8">*/}
+        {/*    <FilterSidebar*/}
+        {/*      filters={filters}*/}
+        {/*      onFiltersChange={setFilters}*/}
+        {/*    />*/}
+        {/*    <div className="flex-1">*/}
+        {/*      <ProductGrid*/}
+        {/*        onSelectProduct={handleSelectProduct}*/}
+        {/*        selectedProducts={selectedProducts}*/}
+        {/*        showAll={showAllProducts}*/}
+        {/*        onToggleShowAll={() => setShowAllProducts(!showAllProducts)}*/}
+        {/*        filters={filters}*/}
+        {/*      />*/}
+        {/*    </div>*/}
+        {/*  </div>*/}
+        {/*</section>*/}
 
         {selectedProducts.length >= 2 && (
           <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">

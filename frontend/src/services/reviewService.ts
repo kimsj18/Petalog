@@ -52,7 +52,7 @@ export const reviewService = {
    * POST /reviews
    */
   async createReview(data: CreateReviewRequest): Promise<ApiResponse<{ id: string }>> {
-    return apiClient.post<{ id: string }>(`/v1/products/${data.products_id}/review`, data);
+    return apiClient.post<{ id: string }>(`/v1/products/${data.products_id}/review`, data as unknown as Record<string, unknown>);
   },
 
   /**
@@ -60,7 +60,7 @@ export const reviewService = {
    * PUT /reviews/{id}
    */
   async updateReview(reviewId: string, data: UpdateReviewRequest): Promise<ApiResponse<void>> {
-    return apiClient.put<void>(`/reviews/${reviewId}`, data);
+    return apiClient.put<void>(`/v1/user/products/reviews/${reviewId}`, data as unknown as Record<string, unknown>);
   },
 
   /**

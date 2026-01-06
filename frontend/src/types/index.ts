@@ -12,6 +12,7 @@ export interface Product {
   imageUrl: string;
   quantity: number;
   price?: number; // DB에는 없지만 프론트엔드에서 필요
+  originalPrice?: number; // 프론트엔드에서 할인가 표시용
   rating?: number;
   reviewCount?: number;
   // 관계 데이터 (JOIN 결과)
@@ -89,11 +90,21 @@ export interface Cart {
 export interface CartItem {
   id: string; // cart_id
   name: string;
-  brand: string;
   price: number;
-  image: string;
+  image?: string;
+  brand?: string;
   quantity: number;
   products_id: string;
+}
+
+export interface CartItemListDTO {
+  cartItemId: string;
+  productId: string;
+  productName: string;
+  price: number;
+  quantity: number;
+  imageUrl?: string; // 백엔드에서 추가 필요
+  brand?: string; // 백엔드에서 추가 필요
 }
 
 // ========================================

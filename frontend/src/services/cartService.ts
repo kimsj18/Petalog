@@ -1,7 +1,7 @@
 // Spring Boot API - 장바구니 서비스
 
 import { apiClient, ApiResponse } from '@/lib/api';
-import { Cart } from '@/types';
+import { CartItemListDTO } from '@/types';
 
 // 장바구니 추가 요청
 export interface AddToCartRequest {
@@ -23,24 +23,24 @@ export const cartService = {
    * 장바구니 목록 조회
    * GET /cart
    */
-  async getCart(): Promise<ApiResponse<Cart[]>> {
-    return apiClient.get<Cart[]>('/cart');
+  async getCart(): Promise<ApiResponse<CartItemListDTO[]>> {
+    return apiClient.get<CartItemListDTO[]>('/v1/user/cart');
   },
 
   /**
    * 장바구니 추가
-   * POST /cart
+   * POST /v1/products/{productId}/cart
    */
-  async addToCart(data: AddToCartRequest): Promise<ApiResponse<{ cart_id: string }>> {
-    return apiClient.post<{ cart_id: string }>('/cart', data);
+  async addToCart(data: AddToCartRequest): Promise<ApiResponse<void>> {
+    return apiClient.post<void>(`/v1/products/${data.products_id}/cart`, { quantity: data.quantity });
   },
 
   /**
    * 장바구니 수량 수정
    * PUT /cart/{id}
    */
-  async updateCartQuantity(cartId: string, quantity: number): Promise<ApiResponse<void>> {
-    return apiClient.put<void>(`/cart/${cartId}`, { quantity });
+  async updateCartQuantity(cartItemId: string, quantity: number): Promise<ApiResponse<void>> {
+    return apiClient.put<void>(`/v1/user/cart/${cartItemId}`, { quantity });
   },
 
   /**
@@ -48,7 +48,7 @@ export const cartService = {
    * DELETE /cart/{id}
    */
   async removeFromCart(cartId: string): Promise<ApiResponse<void>> {
-    return apiClient.delete<void>(`/cart/${cartId}`);
+    return apiClient.delete<void>(`/v1/user/cart/${cartId}/delete`);
   },
 
   /**

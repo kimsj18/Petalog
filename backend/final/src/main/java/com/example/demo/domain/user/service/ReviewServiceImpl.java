@@ -67,6 +67,7 @@ public class ReviewServiceImpl implements ReviewService{
                         r.getContent(),
                         r.getScore(),
                         r.getUserName(),
+                        r.getUser().getUserId(),
                         r.getCreatedAt()
                 )).toList();
     }

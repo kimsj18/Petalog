@@ -35,8 +35,8 @@ public class UserAddress {
     @Column(name = "address2", length = 100)
     private String address2;
 
-    @Column(name = "is_default", nullable = false)
-    private boolean isDefault;
+    @Column(name = "is_default")
+    private int isDefault;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

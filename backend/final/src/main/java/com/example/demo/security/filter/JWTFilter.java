@@ -37,6 +37,10 @@ public class JWTFilter extends OncePerRequestFilter {
             return true;
         }
 
+        if(path.startsWith("/api/v1/oauth")){
+            return true;
+        }
+
         return false;
     }
 

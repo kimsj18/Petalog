@@ -1,7 +1,7 @@
 // Spring Boot API - 주문 서비스
 
 import { apiClient, ApiResponse } from '@/lib/api';
-import { Order, OrderItem } from '@/types';
+import { Order } from '@/types';
 
 // 주문 생성 요청
 export interface CreateOrderRequest {
@@ -43,7 +43,7 @@ export const orderService = {
    * POST /orders
    */
   async createOrder(data: CreateOrderRequest): Promise<ApiResponse<{ orders_id: string }>> {
-    return apiClient.post<{ orders_id: string }>('/orders', data);
+    return apiClient.post<{ orders_id: string }>('/orders', data as unknown as Record<string, unknown>);
   },
 
   /**

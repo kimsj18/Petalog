@@ -29,7 +29,7 @@ export interface CreateProductRequest {
 }
 
 // 상품 수정 요청
-export interface UpdateProductRequest extends Partial<CreateProductRequest> {}
+export type UpdateProductRequest = Partial<CreateProductRequest>;
 
 // ========================================
 // Products API
@@ -40,8 +40,8 @@ export const productService = {
    * 상품 목록 조회
    * GET /products
    */
-  async getProducts(params?: ProductFilterParams): Promise<ApiResponse<Product[]>> {
-    return apiClient.get<Product[]>('/products', params);
+  async getProducts(): Promise<ApiResponse<Product[]>> {
+    return apiClient.get<Product[]>('/products');
   },
 
   /**
@@ -73,7 +73,7 @@ export const productService = {
    * GET /products?ingredient=닭
    */
   async getProductsByIngredient(ingredient: string): Promise<ApiResponse<Product[]>> {
-    return apiClient.get<Product[]>('/products', { ingredient });
+    return apiClient.get<Product[]>('/productList/ingredient', { ingredient });
   },
 
   /**
@@ -83,6 +83,14 @@ export const productService = {
   async getProductsByBrand(brand: string): Promise<ApiResponse<Product[]>> {
     return apiClient.get<Product[]>('/products', { brand });
   },
+
+    /**
+   * 상품 검색 (이름 또는 브랜드)
+   * GET /api/v1/user/productList/search?keyword={keyword}
+   */
+    async searchProducts(keyword: string): Promise<ApiResponse<Product[]>> {
+      return apiClient.get<Product[]>('/v1/user/productList/search', { keyword });
+    },
 
   /**
    * 인기 상품 조회 (평점 순)
@@ -113,7 +121,7 @@ export const productService = {
    * POST /products
    */
   async createProduct(data: CreateProductRequest): Promise<ApiResponse<{ products_id: string }>> {
-    return apiClient.post<{ products_id: string }>('/products', data);
+    return apiClient.post<{ products_id: string }>('/products', data as unknown as Record<string, unknown>);
   },
 
   /**
@@ -121,7 +129,7 @@ export const productService = {
    * PUT /products/{id}
    */
   async updateProduct(productId: string, data: UpdateProductRequest): Promise<ApiResponse<void>> {
-    return apiClient.put<void>(`/products/${productId}`, data);
+    return apiClient.put<void>(`/products/${productId}`, data as unknown as Record<string, unknown>);
   },
 
   /**

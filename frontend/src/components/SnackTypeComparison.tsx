@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Clock, Bone, Droplet, Cookie } from 'lucide-react';
-import { Product } from '../App';
+import { Product } from '../types';
 import { Container } from './common/Container';
 
 interface SnackTypeComparisonProps {
@@ -155,21 +155,41 @@ export function SnackTypeComparison({ onProductClick }: SnackTypeComparisonProps
   const currentType = snackTypes.find(t => t.id === selectedType);
   const Icon = currentType?.icon || Cookie;
 
+  // 간식 제품 타입 정의
+  type SnackProduct = {
+    name: string;
+    brand: string;
+    price: number;
+    size: string;
+    image: string;
+    features: string[];
+    rating: number;
+    bestFor: string;
+  };
+
   // 간식 제품을 Product 타입으로 변환
-  const convertToProduct = (item: any, id: string): Product => ({
-    id,
+  const convertToProduct = (item: SnackProduct, id: string, type: string): Product => ({
+    products_id: id,
     name: item.name,
     brand: item.brand,
+    category: '간식',
+    snack_type: type === 'treat' ? '트릿' : type === 'jerky' ? '육포' : type === 'churu' ? '츄르' : '껌',
+    imageUrl: item.image,
+    quantity: 100,
     price: item.price,
     rating: item.rating,
     reviewCount: 1234,
-    image: item.image,
-    ingredients: ['주원료 100%'],
-    benefits: item.features,
+    ingredients: [
+      { ingredients_id: `${id}_ing_1`, products_id: id, ingredients_name: '주원료', ingredients_percentage: 100 },
+    ],
+    benefits: item.features?.map((feature, idx) => ({
+      benefit_id: `${id}_ben_${idx}`,
+      products_id: id,
+      benefit_name: feature,
+    })) || [],
     ageGroup: ['전연령'],
     size: item.size,
     madeIn: '대한민국',
-    bestFor: [item.bestFor],
   });
 
   return (
@@ -217,7 +237,7 @@ export function SnackTypeComparison({ onProductClick }: SnackTypeComparisonProps
             {currentProducts.map((product, index) => (
               <div 
                 key={index} 
-                onClick={() => onProductClick && onProductClick(convertToProduct(product, `snacktype-${selectedType}-${index}`))}
+                onClick={() => onProductClick && onProductClick(convertToProduct(product, `snacktype-${selectedType}-${index}`, selectedType))}
                 className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow bg-white cursor-pointer"
               >
                 <div className="aspect-video overflow-hidden">

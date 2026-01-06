@@ -1,6 +1,9 @@
 import type {Metadata, Viewport} from 'next';
 import './globals.css';
 import { AuthProvider } from './AuthProvider';
+import { HeaderWrapper } from './HeaderWrapper';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import * as process from "process";
 
 export const metadata: Metadata = {
   title: '멍간식 - 강아지 간식 비교 플랫폼',
@@ -19,10 +22,18 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+
   return (
     <html lang="ko">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <GoogleOAuthProvider clientId={googleClientId}>
+        <AuthProvider>
+          <HeaderWrapper />
+          {children}
+        </AuthProvider>
+        </GoogleOAuthProvider>
       </body>
     </html>
   );

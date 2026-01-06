@@ -10,4 +10,8 @@ public interface ProductsListService {
     List<ProductDetailDTO> findAllProductsCategoryList(Category category);
 
     ProductDetailDTO findDetailByProductId(String productId);
+
+    List<ProductDetailDTO> findAllWithIngredient(String ingredient);
+
+    List<ProductDetailDTO> searchByNameOrBrand(String keyword);
 }

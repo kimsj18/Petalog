@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Mail, Lock } from 'lucide-react';
+import { ArrowLeft, Lock } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import {useGoogleLogin} from "@react-oauth/google";
 
 export function UserLoginPage() {
   const router = useRouter();
@@ -30,41 +31,68 @@ export function UserLoginPage() {
       }else{
         router.push("/admin")
       }
-    } catch (error: any) {
-      alert(error.message || '로그인에 실패했습니다.');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '로그인에 실패했습니다.';
+      alert(errorMessage);
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      // TODO: Google OAuth 실제 구현 필요
-      // 임시로 mock 데이터 사용 (실제로는 OAuth 플로우를 구현해야 함)
-      await oauthLogin({
-        provider: 'google',
-        oauth_id: 'google_123',
-        email: 'user@gmail.com',
-        name: 'Google User',
-      });
-      
-      router.push('/');
-    } catch (error: any) {
-      alert(error.message || 'Google 로그인에 실패했습니다.');
+  // 구글 Oauth 로그인
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        //구글 accessToken으로 사용자 정보 가져오기
+        const googleUserInfo = await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{
+          headers: {
+            Authorization: `Bearer ${tokenResponse.access_token}`,
+          },
+        }).then(res => res.json())
+
+        // 백엔드로 OAuth로그인 요청
+        await oauthLogin({
+          provider: 'google',
+          accessToken: tokenResponse.access_token,
+          oauth_id: googleUserInfo.id,
+          email: googleUserInfo.email,
+          name: googleUserInfo.name || googleUserInfo.emal.split('@')[0],
+        });
+
+        const userRole = useAuthStore.getState().user?.userRole;
+        if(userRole ==="USER"){
+          router.push("/")
+        }else {
+          router.push("/admin")
+        }
+      }catch (error){
+        console.error('Google 로그인 오류:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Google 로그인에 실패했습니다.';
+        alert(errorMessage);
+      }
+    },
+    onError: () => {
+      alert('Google 로그인에 실패했습니다.')
     }
+  });
+
+  const handleGoogleLogin =  () => {
+    googleLogin();
   };
 
   const handleKakaoLogin = async () => {
     try {
-      // TODO: Kakao OAuth 실제 구현 필요
+      // TODO: Kakao OAuth 실제 구현 필요 - accessToken을 실제로 받아와야 함
       await oauthLogin({
         provider: 'kakao',
+        accessToken: '', // TODO: 실제 Kakao OAuth에서 받은 accessToken으로 교체 필요
         oauth_id: 'kakao_123',
         email: 'user@kakao.com',
         name: 'Kakao User',
       });
       
       router.push('/');
-    } catch (error: any) {
-      alert(error.message || 'Kakao 로그인에 실패했습니다.');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Kakao 로그인에 실패했습니다.';
+      alert(errorMessage);
     }
   };
 

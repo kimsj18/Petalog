@@ -7,6 +7,7 @@ import com.example.demo.entity.Products;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -57,10 +58,76 @@ class ProductsfindRepositoryTest {
                 benefitDTOS
         );
         System.out.println(dto);
+    }
 
+    @Test
+    @Transactional
+    void findAllWithIngredient(){
+        List<Products> products = productsfindRepository.findAllWithIngredient("소고기");
+        System.out.println(products);
 
+        List<ProductDetailDTO> productDetailDTOS = products.stream()
+                .map(p -> {
+                    List<IngredientDTO> ingredientDTOS = p.getIngredients().stream()
+                            .map(i -> new IngredientDTO(i.getIngredientsName(), i.getIngredientsPercentage()))
+                            .toList();
 
+                    List<BenefitDTO> benefitDTOS = p.getBenefits().stream()
+                            .map(b -> new BenefitDTO(b.getBenefitName()))
+                            .toList();
 
+                    return new ProductDetailDTO(
+                            p.getProductsId(),
+                            p.getName(),
+                            p.getBrand(),
+                            p.getCategory(),
+                            p.getSnackType(),
+                            p.getImageUrl(),
+                            p.getMadein(),
+                            p.getQuantity(),
+                            p.getSize(),
+                            p.getPrice(),
+                            p.getDescription(),
+                            ingredientDTOS,
+                            benefitDTOS
+                    );
+                }).toList();
+
+        System.out.println(productDetailDTOS);
+    }
+
+    @Test
+    @Transactional
+    void searchByNameOrBrand(){
+        String keyword = "오리젠";
+        List<Products> products = productsfindRepository.searchByNameOrBrand(keyword);
+
+        List<ProductDetailDTO> productDetailDTOS = products.stream()
+                .map(p -> {
+                    List<IngredientDTO> ingredientDTOS = p.getIngredients().stream()
+                            .map(i -> new IngredientDTO(i.getIngredientsName(), i.getIngredientsPercentage()))
+                            .toList();
+
+                    List<BenefitDTO> benefitDTOS = p.getBenefits().stream()
+                            .map(b -> new BenefitDTO(b.getBenefitName())).toList();
+
+                    return new ProductDetailDTO(
+                            p.getProductsId(),
+                            p.getName(),
+                            p.getBrand(),
+                            p.getCategory(),
+                            p.getSnackType(),
+                            p.getImageUrl(),
+                            p.getMadein(),
+                            p.getQuantity(),
+                            p.getSize(),
+                            p.getPrice(),
+                            p.getDescription(),
+                            ingredientDTOS,
+                            benefitDTOS
+                    );
+                }).toList();
+        System.out.println(productDetailDTOS);
 
 
     }

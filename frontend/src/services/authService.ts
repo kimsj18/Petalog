@@ -15,6 +15,7 @@ export interface LoginResponse {
   password: string;
   name: string;
   userRole: string;
+  userId: string;
   accessToken: string;
   refreshToken: string;
 }
@@ -30,6 +31,7 @@ export interface RegisterRequest {
 // OAuth 로그인 요청
 export interface OAuthLoginRequest {
   provider: 'google' | 'kakao';
+  accessToken: string;
   oauth_id: string;
   email: string;
   name: string;
@@ -77,8 +79,11 @@ export const authService = {
    * POST /api/v1/oauth/login
    */
   async oauthLogin(data: OAuthLoginRequest): Promise<ApiResponse<LoginResponse>> {
-    // TODO: 백엔드 OAuth API 구현 후 수정
-    const response = await apiClient.post<LoginResponse>('/v1/oauth/login', data);
+
+    const response = await apiClient.post<LoginResponse>('/v1/oauth/login',{
+      provider: data.provider,
+      accessToken: data.accessToken,
+    });
     
     if (response.success && response.data) {
       apiClient.setToken(response.data.accessToken);
@@ -93,7 +98,7 @@ export const authService = {
    * POST /api/v1/register
    */
   async register(data: RegisterRequest): Promise<ApiResponse<{ user_id: string }>> {
-    return apiClient.post<{ user_id: string }>('/v1/register', data);
+    return apiClient.post<{ user_id: string }>('/v1/register', data as unknown as Record<string, unknown>);
   },
 
   /**

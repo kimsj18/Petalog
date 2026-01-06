@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { authService, LoginRequest, OAuthLoginRequest } from '@/services/authService';
 import { User } from '@/types';
 import { apiClient } from '@/lib/api';
+import { useCartStore } from './cartStore';
 
 interface AuthState {
   user: User | null;
@@ -35,14 +36,14 @@ export const useAuthStore = create<AuthState>()(
           const response = await authService.login(credentials);
           
           if (response.success && response.data) {
-            const { accessToken, refreshToken, email, name, userRole } = response.data;
+            const { accessToken, refreshToken, email, name, userRole, userId } = response.data;
             
             // API 클라이언트에 토큰 설정
             apiClient.setToken(accessToken);
             
             // 백엔드 응답을 User 타입으로 변환
             const user: User = {
-              user_id: '', // JWT에서 추출하거나 별도 API 호출 필요
+              user_id: userId || '',
               user_email: email,
               user_name: name,
               user_phone: '',
@@ -61,10 +62,13 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: true,
               isLoading: false,
             });
+            
+            // 로그인 성공 후 장바구니 로드
+            useCartStore.getState().loadCart();
           } else {
             throw new Error(response.error || '로그인에 실패했습니다.');
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           set({ isLoading: false });
           throw error;
         }
@@ -76,13 +80,13 @@ export const useAuthStore = create<AuthState>()(
           const response = await authService.oauthLogin(data);
           
           if (response.success && response.data) {
-            const { accessToken, refreshToken, email, name, userRole } = response.data;
+            const { accessToken, refreshToken, email, name, userRole, userId } = response.data;
             
             apiClient.setToken(accessToken);
             
             // 백엔드 응답을 User 타입으로 변환
             const user: User = {
-              user_id: '',
+              user_id: userId || '',
               user_email: email,
               user_name: name,
               user_phone: '',
@@ -101,10 +105,13 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: true,
               isLoading: false,
             });
+            
+            // OAuth 로그인 성공 후 장바구니 로드
+            useCartStore.getState().loadCart();
           } else {
             throw new Error(response.error || 'OAuth 로그인에 실패했습니다.');
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           set({ isLoading: false });
           throw error;
         }
@@ -118,6 +125,10 @@ export const useAuthStore = create<AuthState>()(
         } finally {
           // 로그아웃은 항상 성공 처리 (네트워크 오류여도 클라이언트에서 로그아웃)
           apiClient.clearToken();
+          
+          // 장바구니 초기화
+          useCartStore.getState().resetCart();
+          
           set({
             user: null,
             accessToken: null,
@@ -162,6 +173,9 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
           });
+          
+          // 인증 확인 후 장바구니 로드
+          useCartStore.getState().loadCart();
         } catch (error) {
           console.error('Auth check error:', error);
           // 에러 발생 시 리프레시 토큰으로 갱신 시도

@@ -21,7 +21,7 @@ export function AdminOrderList() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   // TODO: API 호출로 변경
-  const [orders, setOrders] = useState<Order[]>([
+  const [orders] = useState<Order[]>([
     {
       id: 'ORD001',
       orderNumber: '20240115-001',

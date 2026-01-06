@@ -1,17 +1,71 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { CheckCircle2, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ChevronDown } from 'lucide-react';
 import { Product } from '../types';
 import { Container } from './common/Container';
+import { apiClient } from '@/lib/api';
 
 interface AllergyComparisonProps {
   onProductClick?: (product: Product) => void;
 }
 
+// API 응답 타입 정의
+interface IngredientDTO {
+  name: string;
+  percentage: number;
+}
+
+interface BenefitDTO {
+  name: string;
+}
+
+interface ProductDetailDTO {
+  productsId: string;
+  name: string;
+  brand: string;
+  category: string;
+  snackType: string;
+  imageUrl: string;
+  madeIn: string;
+  size: number;
+  price: number;
+  quantity: number;
+  description: string;
+  ingredientDTOs: IngredientDTO[];
+  benefitDTOs: BenefitDTO[];
+}
+
+// 이미지 URL 변환 함수: 상대 경로를 전체 URL로 변환
+const getImageUrl = (imageUrl: string | undefined | null): string => {
+  if (!imageUrl) return '';
+  
+  // 이미 전체 URL인 경우 (http:// 또는 https://로 시작)
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
+  
+  // 상대 경로인 경우 (/uploads/...)
+  if (imageUrl.startsWith('/')) {
+    // 백엔드 서버 URL
+    const backendUrl = typeof window !== 'undefined' 
+      ? (window.location.hostname === 'localhost' 
+          ? 'http://localhost:8080' 
+          : `${window.location.protocol}//${window.location.hostname}:8080`)
+      : 'http://localhost:8080';
+    return `${backendUrl}${imageUrl}`;
+  }
+  
+  return imageUrl;
+};
+
 export function AllergyComparison({ onProductClick }: AllergyComparisonProps) {
   const [selectedMeat, setSelectedMeat] = useState('chicken');
+  const [showMeatDropdown, setShowMeatDropdown] = useState(false);
+  const [apiProducts, setApiProducts] = useState<ProductDetailDTO[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const meatTypes = [
     { id: 'chicken', name: '닭', icon: '🐔', color: 'yellow' },
@@ -20,172 +74,96 @@ export function AllergyComparison({ onProductClick }: AllergyComparisonProps) {
     { id: 'duck', name: '오리', icon: '🦆', color: 'blue' },
     { id: 'salmon', name: '연어', icon: '🐟', color: 'orange' },
     { id: 'lamb', name: '양', icon: '🐑', color: 'gray' },
+    { id: 'sweetpotato', name: '고구마', icon: '🍠', color: 'orange' },
   ];
 
-  const products: { [key: string]: Product[] } = {
-    chicken: [
-      {
-        name: '프리미엄 닭가슴살 큐브',
-        brand: '네츄럴코어',
-        price: 18900,
-        image: 'https://images.unsplash.com/photo-1604544203292-0daa7f847478?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjB0cmVhdHMlMjBzbmFja3N8ZW58MXx8fHwxNzY1ODU2MTY3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-        mainIngredient: '닭가슴살 95%',
-        rating: 4.8,
-        allergyRisk: '낮음',
-        benefits: ['고단백', '저지방'],
-      },
-      {
-        name: '오리지널 독 트릿',
-        brand: '오리젠',
-        price: 32000,
-        image: 'https://images.unsplash.com/photo-1604544203292-0daa7f847478?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjB0cmVhdHMlMjBzbmFja3N8ZW58MXx8fHwxNzY1ODU2MTY3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-        mainIngredient: '신선한 닭고기 + 칠면조',
-        rating: 4.9,
-        allergyRisk: '중간',
-        benefits: ['복합 단백질', '오메가-3'],
-      },
-      {
-        name: '닭가슴살 동결건조',
-        brand: '리얼미트',
-        price: 15800,
-        image: 'https://images.unsplash.com/photo-1604544203292-0daa7f847478?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjB0cmVhdHMlMjBzbmFja3N8ZW58MXx8fHwxNzY1ODU2MTY3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-        mainIngredient: '국내산 닭가슴살 100%',
-        rating: 4.7,
-        allergyRisk: '낮음',
-        benefits: ['단일 단백질', '무첨가'],
-      },
-    ],
-    beef: [
-      {
-        name: '소고기 육포',
-        brand: '더리얼',
-        price: 23000,
-        image: 'https://images.unsplash.com/photo-1604544203292-0daa7f847478?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjB0cmVhdHMlMjBzbmFja3N8ZW58MXx8fHwxNzY1ODU2MTY3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-        mainIngredient: '소고기 100%',
-        rating: 4.8,
-        allergyRisk: '낮음',
-        benefits: ['철분 풍부', '근육 발달'],
-      },
-      {
-        name: '프리미엄 소고기 큐브',
-        brand: '네츄럴코어',
-        price: 21500,
-        image: 'https://images.unsplash.com/photo-1604544203292-0daa7f847478?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjB0cmVhdHMlMjBzbmFja3N8ZW58MXx8fHwxNzY1ODU2MTY3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-        mainIngredient: '소고기 90%',
-        rating: 4.6,
-        allergyRisk: '낮음',
-        benefits: ['고단백', '맛좋음'],
-      },
-    ],
-    pork: [
-      {
-        name: '돼지고기 저키',
-        brand: '리얼미트',
-        price: 16900,
-        image: 'https://images.unsplash.com/photo-1604544203292-0daa7f847478?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjB0cmVhdHMlMjBzbmFja3N8ZW58MXx8fHwxNzY1ODU2MTY3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-        mainIngredient: '돼지고기 100%',
-        rating: 4.5,
-        allergyRisk: '중간',
-        benefits: ['���타민 B', '에너지'],
-      },
-      {
-        name: '저지방 돼지고기',
-        brand: '그리니스',
-        price: 14500,
-        image: 'https://images.unsplash.com/photo-1604544203292-0daa7f847478?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjB0cmVhdHMlMjBzbmFja3N8ZW58MXx8fHwxNzY1ODU2MTY3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-        mainIngredient: '저지방 돼지고기 95%',
-        rating: 4.4,
-        allergyRisk: '낮음',
-        benefits: ['저지방', '소화 잘됨'],
-      },
-    ],
-    duck: [
-      {
-        name: '오리고기 육포',
-        brand: '더리얼',
-        price: 21000,
-        image: 'https://images.unsplash.com/photo-1604544203292-0daa7f847478?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjB0cmVhdHMlMjBzbmFja3N8ZW58MXx8fHwxNzY1ODU2MTY3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-        mainIngredient: '오리고기 100%',
-        rating: 4.8,
-        allergyRisk: '낮음',
-        benefits: ['저알러지', '피부/모질'],
-      },
-      {
-        name: '오리고기 트릿',
-        brand: '캐나다 프레시',
-        price: 19800,
-        image: 'https://images.unsplash.com/photo-1604544203292-0daa7f847478?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjB0cmVhdHMlMjBzbmFja3N8ZW58MXx8fHwxNzY1ODU2MTY3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-        mainIngredient: '오리고기 98%',
-        rating: 4.7,
-        allergyRisk: '낮음',
-        benefits: ['불포화지방', '영양 풍부'],
-      },
-    ],
-    salmon: [
-      {
-        name: '연어 스틱 저키',
-        brand: '캐나다 프레시',
-        price: 24500,
-        image: 'https://images.unsplash.com/photo-1604544203292-0daa7f847478?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjB0cmVhdHMlMjBzbmFja3N8ZW58MXx8fHwxNzY1ODU2MTY3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-        mainIngredient: '연어 90%',
-        rating: 4.7,
-        allergyRisk: '낮음',
-        benefits: ['오메가-3', '피부/모질'],
-      },
-      {
-        name: '연어 큐브',
-        brand: '네츄럴코어',
-        price: 22000,
-        image: 'https://images.unsplash.com/photo-1604544203292-0daa7f847478?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjB0cmVhdHMlMjBzbmFja3N8ZW58MXx8fHwxNzY1ODU2MTY3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-        mainIngredient: '연어 95%',
-        rating: 4.9,
-        allergyRisk: '낮음',
-        benefits: ['DHA', '두뇌 발달'],
-      },
-    ],
-    lamb: [
-      {
-        name: '양고기 육포',
-        brand: '더리얼',
-        price: 26500,
-        image: 'https://images.unsplash.com/photo-1604544203292-0daa7f847478?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjB0cmVhdHMlMjBzbmFja3N8ZW58MXx8fHwxNzY1ODU2MTY3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-        mainIngredient: '양고기 100%',
-        rating: 4.8,
-        allergyRisk: '매우 낮음',
-        benefits: ['저알러지', '희귀 단백질'],
-      },
-      {
-        name: '저알러지 사슴고기',
-        brand: '네츄럴코어',
-        price: 28500,
-        image: 'https://images.unsplash.com/photo-1604544203292-0daa7f847478?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjB0cmVhdHMlMjBzbmFja3N8ZW58MXx8fHwxNzY1ODU2MTY3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-        mainIngredient: '사슴고기 100%',
-        rating: 4.9,
-        allergyRisk: '매우 낮음',
-        benefits: ['초저알러지', '민감한 위장'],
-      },
-    ],
+  // meatTypes id를 ingredient 이름으로 매핑
+  const ingredientMap: { [key: string]: string } = {
+    chicken: '닭',
+    beef: '소고기',
+    pork: '돼지',
+    duck: '오리',
+    salmon: '연어',
+    lamb: '양',
+    sweetpotato: '고구마',
   };
 
-  const currentProducts = products[selectedMeat as keyof typeof products] || [];
+  // 원재료별 제품 데이터 가져오기
+  useEffect(() => {
+    const fetchProductsByIngredient = async () => {
+      const ingredient = ingredientMap[selectedMeat];
+      if (!ingredient) {
+        setApiProducts([]);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await apiClient.get<ProductDetailDTO[]>(
+          '/v1/user/productList/ingredient',
+          { ingredient }
+        );
+
+        if (response.success && response.data) {
+          setApiProducts(response.data);
+        } else {
+          setError(response.error || '데이터를 불러오는데 실패했습니다.');
+          setApiProducts([]);
+        }
+      } catch (err) {
+        console.error('원재료별 제품 조회 실패:', err);
+        setError('데이터를 불러오는데 실패했습니다.');
+        setApiProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProductsByIngredient();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMeat]);
+
   const currentMeat = meatTypes.find(m => m.id === selectedMeat);
 
-  // 알러지 제품을 Product 타입으로 변환
-  const convertToProduct = (item: any, id: string): Product => ({
-    id,
-    name: item.name,
-    brand: item.brand,
-    price: item.price,
-    rating: item.rating,
-    reviewCount: 1234,
-    image: item.image,
-    ingredients: [item.mainIngredient],
-    benefits: item.benefits,
-    ageGroup: ['전연령'],
-    size: '200g',
-    madeIn: '대한민국',
-    bestFor: ['전체크기'],
-  });
+  // API 응답을 Product 타입으로 변환
+  const convertToProduct = (product: ProductDetailDTO): Product => {
+    // imageUrl이 쉼표로 구분된 여러 이미지일 수 있으므로 첫 번째 이미지만 사용
+    const firstImageUrl = product.imageUrl 
+      ? product.imageUrl.split(',')[0].trim() 
+      : '';
+    
+    // 상대 경로를 전체 URL로 변환
+    const fullImageUrl = getImageUrl(firstImageUrl);
+    
+    return {
+      products_id: product.productsId,
+      name: product.name,
+      brand: product.brand,
+      category: product.category,
+      snack_type: product.snackType,
+      imageUrl: fullImageUrl,
+      quantity: product.quantity,
+      price: product.price,
+      rating: 0, // API 응답에 rating이 없으면 기본값
+      reviewCount: 0, // API 응답에 reviewCount가 없으면 기본값
+      ingredients: product.ingredientDTOs.map((ing, idx) => ({
+        ingredients_id: `${product.productsId}-ing-${idx}`,
+        products_id: product.productsId,
+        ingredients_name: ing.name,
+        ingredients_percentage: ing.percentage,
+      })),
+      benefits: product.benefitDTOs.map((ben, idx) => ({
+        benefit_id: `${product.productsId}-ben-${idx}`,
+        products_id: product.productsId,
+        benefit_name: ben.name,
+      })),
+      size: `${product.size}g`,
+      madeIn: product.madeIn,
+      ageGroup: ['전연령'],
+    };
+  };
 
   return (
     <div className="bg-gray-50 py-8">
@@ -195,95 +173,116 @@ export function AllergyComparison({ onProductClick }: AllergyComparisonProps) {
           <p className="text-gray-600 text-sm">원재료별로 간식을 비교하고 우리 강아지에게 맞는 제품을 찾아보세요</p>
         </div>
 
-        {/* Meat Type Selector */}
-        <div className="grid grid-cols-3 gap-2 mb-6">
-          {meatTypes.map((meat) => (
-            <button
-              key={meat.id}
-              onClick={() => setSelectedMeat(meat.id)}
-              className={`p-3 rounded-lg border-2 transition-all ${
-                selectedMeat === meat.id
-                  ? 'border-blue-600 bg-blue-50'
-                  : 'border-gray-200 bg-white hover:border-blue-300'
-              }`}
-            >
-              <div className="text-2xl mb-1">{meat.icon}</div>
-              <div className={`text-sm ${selectedMeat === meat.id ? 'text-blue-700' : 'text-gray-700'}`}>
-                {meat.name}
-              </div>
-            </button>
-          ))}
+        {/* Meat Type Dropdown */}
+        <div className="relative mb-4">
+          <button
+            onClick={() => setShowMeatDropdown(!showMeatDropdown)}
+            className="bg-gray-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm"
+          >
+            <span>{currentMeat?.icon} {currentMeat?.name} 기반 간식</span>
+            <ChevronDown className="size-4" />
+          </button>
+          
+          {showMeatDropdown && (
+            <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10 w-48">
+              {meatTypes.map(meat => (
+                <button
+                  key={meat.id}
+                  onClick={() => {
+                    setSelectedMeat(meat.id);
+                    setShowMeatDropdown(false);
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
+                >
+                  <span>{meat.icon}</span>
+                  <span>{meat.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Products Comparison */}
         <div className="bg-white rounded-xl p-4">
-          <div className="mb-4 flex items-center gap-2">
-            <span className="text-xl">{currentMeat?.icon}</span>
-            <h3 className="text-gray-900">{currentMeat?.name} 기반 간식 비교</h3>
-          </div>
+          {/* 로딩 및 에러 상태 */}
+          {loading && (
+            <div className="text-center py-8 text-gray-500">로딩 중...</div>
+          )}
+          
+          {error && (
+            <div className="text-center py-8 text-red-500">{error}</div>
+          )}
 
-          <div className="space-y-4 mb-4">
-            {currentProducts.map((product, index) => (
-              <div 
-                key={index} 
-                onClick={() => onProductClick && onProductClick(convertToProduct(product, `allergy-${selectedMeat}-${index}`))}
-                className="bg-white rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-              >
-                <div className="aspect-video overflow-hidden">
-                  <ImageWithFallback
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                  />
+          {/* 제품 리스트 */}
+          {!loading && !error && (
+            <div className="space-y-3 mb-4">
+              {apiProducts.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  해당 원재료의 제품이 없습니다.
                 </div>
-                <div className="p-4">
-                  <div className="text-xs text-blue-600 mb-1">{product.brand}</div>
-                  <h4 className="text-gray-900 mb-3">{product.name}</h4>
+              ) : (
+                apiProducts.map((product) => {
+                  // imageUrl이 쉼표로 구분된 여러 이미지일 수 있으므로 첫 번째 이미지만 사용
+                  const firstImageUrl = product.imageUrl 
+                    ? product.imageUrl.split(',')[0].trim() 
+                    : '';
+                  
+                  // 상대 경로를 전체 URL로 변환
+                  const fullImageUrl = getImageUrl(firstImageUrl);
+                  
+                  // 첫 번째 원재료를 주원료로 표시
+                  const mainIngredient = product.ingredientDTOs.length > 0 
+                    ? `${product.ingredientDTOs[0].name} ${product.ingredientDTOs[0].percentage}%`
+                    : '';
 
-                  <div className="space-y-2 mb-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">주원료</span>
-                      <span className="text-gray-900 text-xs">{product.mainIngredient}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">평점</span>
-                      <span className="text-gray-900">⭐ {product.rating}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">알러지 위험</span>
-                      <span className={`flex items-center gap-1 ${
-                        product.allergyRisk === '매우 낮음' ? 'text-green-600' :
-                        product.allergyRisk === '낮음' ? 'text-blue-600' :
-                        product.allergyRisk === '중간' ? 'text-yellow-600' : 'text-red-600'
-                      }`}>
-                        {product.allergyRisk === '매우 낮음' || product.allergyRisk === '낮음' ? (
-                          <CheckCircle2 className="size-3" />
-                        ) : (
-                          <AlertTriangle className="size-3" />
+                  return (
+                    <div 
+                      key={product.productsId} 
+                      onClick={() => onProductClick && onProductClick(convertToProduct(product))}
+                      className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 p-3 cursor-pointer hover:shadow-md transition-shadow"
+                    >
+                      <div className="w-16 h-16 shrink-0">
+                        <ImageWithFallback
+                          src={fullImageUrl}
+                          alt={product.name}
+                          className="w-full h-full object-cover rounded"
+                        />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-gray-500 mb-1">{product.brand}</div>
+                        <h4 className="text-sm text-gray-900 line-clamp-1 mb-1">{product.name}</h4>
+                        
+                        <div className="flex items-center gap-2 text-xs text-gray-600 mb-1">
+                          <span>{product.price.toLocaleString()}원</span>
+                          {product.size && <><span>·</span><span>{product.size}g</span></>}
+                        </div>
+
+                        {mainIngredient && (
+                          <div className="flex items-center gap-1 text-xs mb-1">
+                            <span className="text-gray-400">주원료: {mainIngredient}</span>
+                          </div>
                         )}
-                        {product.allergyRisk}
-                      </span>
+
+                        <div className="flex flex-wrap gap-1">
+                          {product.benefitDTOs.map((benefit, idx) => (
+                            <span key={idx} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
+                              {benefit.name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {product.benefits.map((benefit, idx) => (
-                      <span key={idx} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                        {benefit}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="text-gray-900">{product.price.toLocaleString()}원</div>
-                </div>
-              </div>
-            ))}
-          </div>
+                  );
+                })
+              )}
+            </div>
+          )}
 
           {/* Allergy Info */}
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
             <div className="flex items-start gap-2">
-              <AlertTriangle className="size-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <AlertTriangle className="size-4 text-yellow-600 shrink-0 mt-0.5" />
               <div className="text-xs">
                 <div className="text-yellow-900 mb-1">알러지 체크 방법</div>
                 <p className="text-yellow-800">

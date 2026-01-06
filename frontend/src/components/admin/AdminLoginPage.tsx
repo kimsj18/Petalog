@@ -5,11 +5,10 @@ import { Mail, Lock, AlertCircle, ArrowLeft, Shield } from 'lucide-react';
 import {useRouter} from "next/navigation";
 
 interface AdminLoginPageProps {
-  onLogin: (email: string) => void;
-  onSwitchToUserLogin: () => void;
+  onSwitchToUserLogin?: () => void;
 }
 
-export function AdminLoginPage({ onLogin, onSwitchToUserLogin }: AdminLoginPageProps) {
+export function AdminLoginPage({ onSwitchToUserLogin }: AdminLoginPageProps = {}) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -67,7 +66,7 @@ export function AdminLoginPage({ onLogin, onSwitchToUserLogin }: AdminLoginPageP
       <div className="w-full max-w-md">
         {/* 뒤로가기 버튼 */}
         <button
-          onClick={onSwitchToUserLogin}
+          onClick={onSwitchToUserLogin || (() => router.push('/login'))}
           className="mb-6 flex items-center gap-2 text-blue-200 hover:text-white transition-colors"
           disabled={isLoading}
         >

@@ -16,16 +16,29 @@ class ApiClient {
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
-    // localStorage에서 토큰 불러오기
-    this.token = localStorage.getItem('auth_token');
+    // localStorage에서 토큰 불러오기 (클라이언트 사이드에서만)
+    if (typeof window !== 'undefined') {
+      try {
+        this.token = localStorage.getItem('auth_token');
+      } catch (error) {
+        console.error('Failed to get token from storage:', error);
+        this.token = null;
+      }
+    }
   }
 
   setToken(token: string | null) {
     this.token = token;
-    if (token) {
-      localStorage.setItem('auth_token', token);
-    } else {
-      localStorage.removeItem('auth_token');
+    if (typeof window !== 'undefined') {
+      try {
+        if (token) {
+          localStorage.setItem('auth_token', token);
+        } else {
+          localStorage.removeItem('auth_token');
+        }
+      } catch (error) {
+        console.error('Failed to set token in storage:', error);
+      }
     }
   }
 
@@ -44,7 +57,7 @@ class ApiClient {
 
     // 토큰이 있으면 Authorization 헤더 추가
     if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+      (headers as Record<string, string>)['Authorization'] = `Bearer ${this.token}`;
     }
 
     try {
@@ -79,14 +92,14 @@ class ApiClient {
     return this.request<T>(endpoint, { method: 'GET' });
   }
 
-  async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+  async post<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
     });
   }
 
-  async put<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+  async put<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'PUT',
       body: data ? JSON.stringify(data) : undefined,
@@ -97,7 +110,7 @@ class ApiClient {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
 
-  async patch<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+  async patch<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'PATCH',
       body: data ? JSON.stringify(data) : undefined,

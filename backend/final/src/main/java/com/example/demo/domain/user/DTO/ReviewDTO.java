@@ -15,6 +15,7 @@ public class ReviewDTO {
     private String content;
     private int score;
     private String userName;
+    private String userId;
     private LocalDate createdAt;
 
 

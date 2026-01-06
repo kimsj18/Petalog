@@ -20,4 +20,6 @@ public interface ReviewRepository extends JpaRepository<Review, String > {
 """)
     Double avgScoreByProductId(String productId);
 
+
+
 }

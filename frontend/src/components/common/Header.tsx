@@ -3,24 +3,29 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Search,
   Menu,
   X,
-  Scale,
   User,
   LogOut,
   ShoppingCart,
 } from "lucide-react";
-import { Container } from "./Container";
 import { useAuthStore } from "@/stores/authStore";
-import { useCartItemCount } from "@/stores/cartStore";
+import { useCartStore } from "@/stores/cartStore";
 
 export function Header() {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const { user, isAuthenticated, logout } = useAuthStore();
-  const cartItemCount = useCartItemCount();
+  const cartItems = useCartStore((state) => state.items);
+  const loadCart = useCartStore((state) => state.loadCart);
+  const cartItemCount = cartItems.length; // 상품 종류 수
+
+  // 인증 상태가 변경될 때 장바구니 로드
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadCart();
+    }
+  }, [isAuthenticated, loadCart]);
 
   const handleLogoClick = () => {
     router.push('/');
@@ -40,15 +45,15 @@ export function Header() {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
-      <Container>
+    <header className="bg-white sticky top-0 z-40">
+      <div className="max-w-6xl mx-auto px-4 border-b border-gray-200">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div 
             className="flex items-center gap-2 cursor-pointer"
             onClick={handleLogoClick}
           >
-            <Scale className="size-6 text-blue-600" />
+            {/*<Scale className="size-6 text-blue-600" />*/}
             <h1 className="text-blue-600">펫탈로그</h1>
           </div>
 
@@ -78,47 +83,33 @@ export function Header() {
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="pb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="간식 이름, 브랜드를 검색하세요"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-
         {/* Mobile Menu */}
         {isMenuOpen && (
           <nav className="border-t border-gray-200 py-4 space-y-2">
             <a
-              href="#"
+              href="../../user/mypage"
               className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
             >
-              인기 비교
+              마이페이지
             </a>
-            <a
-              href="#"
-              className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
-            >
-              성분 가이드
-            </a>
-            <a
-              href="#"
-              className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
-            >
-              가격 분석
-            </a>
-            <a
-              href="#"
-              className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
-            >
-              리뷰
-            </a>
+            {/*<a*/}
+            {/*  href="#"*/}
+            {/*  className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"*/}
+            {/*>*/}
+            {/*  성분 가이드*/}
+            {/*</a>*/}
+            {/*<a*/}
+            {/*  href="#"*/}
+            {/*  className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"*/}
+            {/*>*/}
+            {/*  가격 분석*/}
+            {/*</a>*/}
+            {/*<a*/}
+            {/*  href="#"*/}
+            {/*  className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"*/}
+            {/*>*/}
+            {/*  리뷰*/}
+            {/*</a>*/}
             {isAuthenticated && user && (
               <div className="border-t border-gray-200 py-2">
                 <div className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg">
@@ -145,7 +136,7 @@ export function Header() {
             )}
           </nav>
         )}
-      </Container>
+      </div>
     </header>
   );
 }
