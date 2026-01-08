@@ -5,7 +5,6 @@ import com.example.demo.domain.user.repository.ProductsfindRepository;
 import com.example.demo.domain.user.repository.cart.CartRepository;
 import com.example.demo.domain.user.repository.cartItem.CartItemRepository;
 import com.example.demo.domain.user.service.cart.CartService;
-import com.example.demo.domain.user.service.cart.CartServiceImpl;
 import com.example.demo.entity.CartItem;
 import com.example.demo.entity.Carts;
 import com.example.demo.entity.Products;
@@ -53,7 +52,8 @@ public class CartItemServiceImpl implements CartItemService{
     @Override
     public List<CartItemListDTO> findByCarts_CartId(String userId) {
         Carts cart = cartRepository.findByUser_UserId(userId).orElseThrow();
-        List<CartItem> cartItems = cartItemRepository.findByCarts_CartId(cart.getCartId());
+        // JOIN FETCH를 사용하여 Products를 함께 가져와 N+1 쿼리 문제 해결
+        List<CartItem> cartItems = cartItemRepository.findByCarts_CartIdWithProducts(cart.getCartId());
 
         List<CartItemListDTO> cartItemListDTOS = cartItems.stream()
                 .map(cartItem -> new CartItemListDTO(

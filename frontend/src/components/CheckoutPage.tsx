@@ -235,14 +235,15 @@ export function CheckoutPage({
     try {
       // 1. 결제 요청 생성 (merchant_uid 생성)
       const paymentRequest: PaymentRequestDTO = {
-        type,
+        type: type || 'cart',  // type이 undefined일 경우 기본값 'cart' 사용
         productId: type === 'buyNow' ? productId : undefined,
         quantity: type === 'buyNow' ? quantity : undefined,
         recipientName: name,
         recipientPhone: phone,
+        
         zipcode: zipCode,
         address1: address,
-        address2: detailAddress,
+        address2: detailAddress || undefined,  // 빈 문자열이면 undefined로 변환
         paymentMethod: 'PORTONE',
         amount: finalAmount,
       };
@@ -297,6 +298,16 @@ export function CheckoutPage({
         impUid: payment.paymentId, // 포트원에서 받은 paymentId (imp_uid)
         merchantUid: merchantUid,
         amount: finalAmount,
+        // 배송지 정보 추가
+        recipientName: name,
+        recipientPhone: phone,
+        zipcode: zipCode,
+        address1: address,
+        address2: detailAddress || undefined,
+        // 주문 정보 추가
+        type: type || 'cart',
+        productId: productId,
+        quantity: quantity
       });
 
       if (!confirmResponse.success) {
@@ -436,13 +447,13 @@ export function CheckoutPage({
             <div className="space-y-3">
               {orderItems.map((item) => (
                 <div key={item.id} className="flex gap-3">
-                  {item.image && (
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-20 h-20 object-cover rounded-lg"
-                    />
-                  )}
+                  {/*{item.image && (*/}
+                  {/*  <img*/}
+                  {/*    src={item.image}*/}
+                  {/*    alt={item.name}*/}
+                  {/*    className="w-20 h-20 object-cover rounded-lg"*/}
+                  {/*  />*/}
+                  {/*)}*/}
                   <div className="flex-1">
                     <div className="text-sm font-medium text-gray-900">{item.name}</div>
                     {item.brand && (

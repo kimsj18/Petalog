@@ -30,7 +30,7 @@ public class Orders {
     @Column(name = "zipcode", nullable = false, length = 10)
     private String zipcode;
 
-    @Column(name = "address1", nullable = false, length = 100)
+    @Column(name = "address1",nullable = false, length = 100)
     private String address1;
 
     @Column(name = "address2", length = 100)
@@ -42,7 +42,7 @@ public class Orders {
     @Column(name = "total_amount", nullable = false)
     private int totalAmount;
 
-    @Column(name = "deliery_fee", nullable = false)
+    @Column(name = "delivery_fee", nullable = false)
     private int deliveryFee;
 
     @Column(name = "final_amount", nullable = false)
@@ -57,5 +57,22 @@ public class Orders {
     @Column(name = "update_at")
     private LocalDateTime updateAt;
 
-
+    @Override
+    public String toString() {
+        return "Orders{" +
+                "ordersId='" + ordersId + '\'' +
+                ", recipientName='" + recipientName + '\'' +
+                ", recipientPhone='" + recipientPhone + '\'' +
+                ", zipcode='" + zipcode + '\'' +
+                ", address1='" + address1 + '\'' +
+                ", address2='" + address2 + '\'' +
+                ", orderNumber='" + orderNumber + '\'' +
+                ", totalAmount=" + totalAmount +
+                ", deliveryFee=" + deliveryFee +
+                ", finalAmount=" + finalAmount +
+                ", orderStatus='" + orderStatus + '\'' +
+                ", createdAt=" + createdAt +
+                ", updateAt=" + updateAt +
+                '}';
+    }
 }

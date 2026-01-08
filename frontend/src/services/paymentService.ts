@@ -37,6 +37,16 @@ export interface PortOnePaymentConfirmDTO {
   impUid: string;
   merchantUid: string;
   amount: number;
+  // 배송지 정보 추가
+  recipientName: string;
+  recipientPhone: string;
+  zipcode: string;
+  address1: string;
+  address2?: string;
+  // 주문 정보 추가
+  type: 'cart' | 'buyNow';
+  productId?: string;
+  quantity?: number;
 }
 
 // ========================================

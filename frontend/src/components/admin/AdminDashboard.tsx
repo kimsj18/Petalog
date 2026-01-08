@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Package, 
@@ -10,9 +10,44 @@ import {
   TrendingUp,
   LogOut
 } from 'lucide-react';
+import { AdminDashboardDTO, orderService } from '@/services';
+import { escape } from 'querystring';
 
 export function AdminDashboard() {
   const router = useRouter();
+
+  const [dashBoard, setDashBoard] = useState<AdminDashboardDTO>({
+    totalProducts: 0,
+    totalOrders: 0,
+    totalUsers: 0,
+    totalRevenue: 0
+  })
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+
+  useEffect(() => {
+    fetchDashboard()
+  },[]);
+
+const fetchDashboard = async () => {
+  try{
+    setLoading(true);
+    setError(null);
+    const response = await orderService.getAdminDashboard();
+
+    if(response.success && response.data){
+      setDashBoard(response.data);
+    }else{
+      setError(response.error || "대시보드를 불러오는데 실패했습니다.");
+    }
+  }catch(err){
+    setError("통계를 불러오는 중 오류가 발생했습니다.")
+    console.log('통계 조회 오류:', err)
+  }finally{
+    setLoading(false)
+  }
+}
 
   const handleLogout = () => {
     // TODO: API 호출
@@ -24,13 +59,7 @@ export function AdminDashboard() {
     router.push(path);
   };
 
-  // 임시 통계 데이터
-  const stats = {
-    totalProducts: 156,
-    totalOrders: 89,
-    totalUsers: 1234,
-    totalRevenue: 15680000,
-  };
+  
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -55,7 +84,7 @@ export function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">총 상품</p>
-                <p className="text-2xl text-gray-900 mt-1">{stats.totalProducts}</p>
+                <p className="text-2xl text-gray-900 mt-1">{dashBoard.totalProducts}</p>
               </div>
               <div className="p-3 bg-blue-100 rounded-lg">
                 <Package className="size-6 text-blue-600" />
@@ -67,7 +96,7 @@ export function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">총 주문</p>
-                <p className="text-2xl text-gray-900 mt-1">{stats.totalOrders}</p>
+                <p className="text-2xl text-gray-900 mt-1">{dashBoard.totalOrders}</p>
               </div>
               <div className="p-3 bg-green-100 rounded-lg">
                 <ShoppingCart className="size-6 text-green-600" />
@@ -79,7 +108,7 @@ export function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">총 사용자</p>
-                <p className="text-2xl text-gray-900 mt-1">{stats.totalUsers}</p>
+                <p className="text-2xl text-gray-900 mt-1">{dashBoard.totalUsers}</p>
               </div>
               <div className="p-3 bg-purple-100 rounded-lg">
                 <Users className="size-6 text-purple-600" />
@@ -92,7 +121,7 @@ export function AdminDashboard() {
               <div>
                 <p className="text-sm text-gray-600">총 매출</p>
                 <p className="text-2xl text-gray-900 mt-1">
-                  {(stats.totalRevenue / 10000).toFixed(0)}만원
+                  {(dashBoard.totalRevenue / 10000).toFixed(0)}만원
                 </p>
               </div>
               <div className="p-3 bg-orange-100 rounded-lg">

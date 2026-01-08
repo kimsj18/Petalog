@@ -93,7 +93,8 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         // 금액 재검증 (포트원에서 받은 금액과 비교)
-        if (portOneResponse.getAmount() != confirmDTO.getAmount()) {
+        if (portOneResponse.getAmountValue() != null && 
+            !portOneResponse.getAmountValue().equals((long) confirmDTO.getAmount())) {
             throw new IllegalArgumentException("결제 금액이 일치하지 않습니다.");
         }
 
@@ -185,15 +186,22 @@ public class PaymentServiceImpl implements PaymentService {
         User user = oAuthRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        // TODO: PaymentRequestDTO에서 배송지 정보를 가져와야 함
-        // 현재는 임시로 처리 (나중에 Payment 엔티티에 배송지 정보 추가 필요)
+        // 배송비 계산 (임시로 3000원 고정)
+        int deliveryFee = 3000;
+        int totalAmount = payment.getAmount() - deliveryFee;
         
+        // 주문 생성
         Orders order = Orders.builder()
                 .ordersId(IdGenerator.orderId())
                 .user(user)
+                .recipientName(confirmDTO.getRecipientName())
+                .recipientPhone(confirmDTO.getRecipientPhone())
+                .zipcode(confirmDTO.getZipcode())
+                .address1(confirmDTO.getAddress1())
+                .address2(confirmDTO.getAddress2() != null ? confirmDTO.getAddress2() : "")
                 .orderNumber(payment.getMerchantUid())
-                .totalAmount(payment.getAmount() - 3000)  // 배송비 제외 (임시)
-                .deliveryFee(3000)  // 임시
+                .totalAmount(totalAmount)
+                .deliveryFee(deliveryFee)
                 .finalAmount(payment.getAmount())
                 .orderStatus("PAID")
                 .createdAt(LocalDateTime.now())
@@ -202,10 +210,68 @@ public class PaymentServiceImpl implements PaymentService {
 
         order = orderRepository.save(order);
 
-        // TODO: 주문 항목 생성 (장바구니 또는 바로구매 정보에서)
-        // 현재는 임시 처리
+        // 주문 항목 생성
+        createOrderItems(userId, order, confirmDTO);
 
         return order;
+    }
+    
+    /**
+     * 주문 항목 생성 (장바구니 또는 바로구매)
+     */
+    private void createOrderItems(String userId, Orders order, PortOnePaymentConfirmDTO confirmDTO) {
+        if ("cart".equals(confirmDTO.getType())) {
+            // 장바구니에서 주문 항목 생성
+            Carts cart = cartRepository.findByUser_UserId(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("장바구니를 찾을 수 없습니다."));
+            
+            List<CartItem> cartItems = cartItemRepository.findByCarts_CartId(cart.getCartId());
+            
+            if (cartItems.isEmpty()) {
+                throw new IllegalArgumentException("장바구니가 비어있습니다.");
+            }
+            
+            for (CartItem cartItem : cartItems) {
+                OrderItem orderItem = OrderItem.builder()
+                        .orderItemId(IdGenerator.orderItemId())
+                        .orders(order)
+                        .products(cartItem.getProducts())
+                        .quantity(cartItem.getQuantity())
+                        .price(cartItem.getProducts().getPrice())
+                        .build();
+                
+                orderItemRepository.save(orderItem);
+                log.info("주문 항목 생성: productId={}, quantity={}, price={}", 
+                        cartItem.getProducts().getProductsId(), 
+                        cartItem.getQuantity(), 
+                        cartItem.getProducts().getPrice());
+            }
+            
+        } else if ("buyNow".equals(confirmDTO.getType())) {
+            // 바로구매 주문 항목 생성
+            if (confirmDTO.getProductId() == null || confirmDTO.getQuantity() == null) {
+                throw new IllegalArgumentException("바로구매 정보가 올바르지 않습니다.");
+            }
+            
+            Products product = productsfindRepository.findById(confirmDTO.getProductId())
+                    .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+            
+            OrderItem orderItem = OrderItem.builder()
+                    .orderItemId(IdGenerator.orderItemId())
+                    .orders(order)
+                    .products(product)
+                    .quantity(confirmDTO.getQuantity())
+                    .price(product.getPrice())
+                    .build();
+            
+            orderItemRepository.save(orderItem);
+            log.info("주문 항목 생성 (바로구매): productId={}, quantity={}, price={}", 
+                    product.getProductsId(), 
+                    confirmDTO.getQuantity(), 
+                    product.getPrice());
+        } else {
+            throw new IllegalArgumentException("잘못된 주문 타입입니다: " + confirmDTO.getType());
+        }
     }
 
     /**

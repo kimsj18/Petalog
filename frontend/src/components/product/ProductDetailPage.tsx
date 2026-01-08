@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -22,6 +22,7 @@ import { apiClient } from '../../lib/api';
 import { ReviewForm } from './ReviewForm';
 import { useAuthStore } from '../../stores/authStore';
 import { useCartStore } from '../../stores/cartStore';
+import { orderService } from '../../services/orderService';
 
 
 // 이미지 URL 변환 함수: 상대 경로를 전체 URL로 변환
@@ -106,6 +107,8 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
   const [reviewLoaded, setReviewLoaded] = useState(false); // ⭐ 핵심
   const [reviewSummary, setReviewSummary] = useState<ReviewSummaryDTO>();
   const [myReview, setMyReview] = useState<ReviewDTO | null>(null);
+  const [hasPurchased, setHasPurchased] = useState<boolean>(false);
+  const [checkingPurchase, setCheckingPurchase] = useState<boolean>(false);
 
   const fetchReviewSummary = async() => {
     try{
@@ -201,6 +204,59 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
 
     }
   }, [selectedTab]);
+
+  // 구매 여부 확인 함수
+  const checkIfPurchased = useCallback(async () => {
+    if (!isAuthenticated || !user?.user_id) {
+      setHasPurchased(false);
+      return;
+    }
+
+    try {
+      setCheckingPurchase(true);
+      const ordersResponse = await orderService.getUserOrders();
+      
+      if (!ordersResponse.success || !ordersResponse.data) {
+        setHasPurchased(false);
+        return;
+      }
+
+      const orders = ordersResponse.data;
+      
+      // 모든 주문의 아이템을 확인
+      for (const order of orders) {
+        const itemsResponse = await orderService.getOrderItems(order.orderId);
+        
+        if (itemsResponse.success && itemsResponse.data) {
+          const hasProduct = itemsResponse.data.some(
+            item => item.productsId === productId
+          );
+          
+          if (hasProduct) {
+            setHasPurchased(true);
+            setCheckingPurchase(false);
+            return;
+          }
+        }
+      }
+      
+      setHasPurchased(false);
+    } catch (error) {
+      console.error('구매 여부 확인 오류:', error);
+      setHasPurchased(false);
+    } finally {
+      setCheckingPurchase(false);
+    }
+  }, [isAuthenticated, user?.user_id, productId]);
+
+  // 로그인 상태나 상품 ID가 변경될 때 구매 여부 확인
+  useEffect(() => {
+    if (isAuthenticated && productId) {
+      checkIfPurchased();
+    } else {
+      setHasPurchased(false);
+    }
+  }, [isAuthenticated, productId, checkIfPurchased]);
 
   if (loading) {
     return (
@@ -727,14 +783,26 @@ export function ProductDetailPage({ productId }: ProductDetailPageProps) {
                   </button>
                 </div>
               ) : isAuthenticated ? (
-                // 리뷰 작성 버튼 (내 리뷰가 없을 때만 표시)
-                <button
-                  onClick={() => setShowReviewForm(true)}
-                  className="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  <MessageSquare className="size-5" />
-                  리뷰 작성하기
-                </button>
+                // 구매 여부 확인 중
+                checkingPurchase ? (
+                  <div className="w-full bg-gray-100 text-gray-600 py-3 rounded-xl text-center">
+                    구매 여부 확인 중...
+                  </div>
+                ) : hasPurchased ? (
+                  // 구매한 경우에만 리뷰 작성 버튼 표시
+                  <button
+                    onClick={() => setShowReviewForm(true)}
+                    className="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <MessageSquare className="size-5" />
+                    리뷰 작성하기
+                  </button>
+                ) : (
+                  // 구매하지 않은 경우
+                  <div className="w-full bg-gray-100 text-gray-600 py-3 rounded-xl text-center">
+                    이 상품을 구매한 고객만 리뷰를 작성할 수 있습니다.
+                  </div>
+                )
               ) : (
                 // 로그인하지 않은 경우
                 <div className="w-full bg-gray-100 text-gray-600 py-3 rounded-xl text-center">

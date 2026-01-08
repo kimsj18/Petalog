@@ -92,12 +92,12 @@ export function Header() {
             >
               마이페이지
             </a>
-            {/*<a*/}
-            {/*  href="#"*/}
-            {/*  className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"*/}
-            {/*>*/}
-            {/*  성분 가이드*/}
-            {/*</a>*/}
+            <a
+              href="../../user/orderHistory"
+              className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
+            >
+              결제 내역
+            </a>
             {/*<a*/}
             {/*  href="#"*/}
             {/*  className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"*/}

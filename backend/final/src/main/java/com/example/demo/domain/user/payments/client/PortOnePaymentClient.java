@@ -1,5 +1,6 @@
 package com.example.demo.domain.user.payments.client;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -95,7 +96,10 @@ public class PortOnePaymentClient {
     public static class PortOnePaymentResponse {
         private String id;  // paymentId (imp_uid)
         private String status;  // "PAID", "CANCELLED" 등
-        private Long amount;  // 결제 금액
+        
+        @JsonProperty("amount")
+        private Amount amount;  // 결제 금액 객체
+        
         private String currency;  // 통화
         private String orderId;  // merchant_uid
         private String transactionId;  // 거래 ID
@@ -107,8 +111,15 @@ public class PortOnePaymentClient {
         public void setId(String id) { this.id = id; }
         public String getStatus() { return status; }
         public void setStatus(String status) { this.status = status; }
-        public Long getAmount() { return amount; }
-        public void setAmount(Long amount) { this.amount = amount; }
+        
+        public Amount getAmount() { return amount; }
+        public void setAmount(Amount amount) { this.amount = amount; }
+        
+        // 편의 메서드: Long 값 반환
+        public Long getAmountValue() {
+            return amount != null ? amount.getAmountValue() : null;
+        }
+        
         public String getCurrency() { return currency; }
         public void setCurrency(String currency) { this.currency = currency; }
         public String getOrderId() { return orderId; }
@@ -119,6 +130,27 @@ public class PortOnePaymentClient {
         public void setPaidAt(String paidAt) { this.paidAt = paidAt; }
         public String getCancelledAt() { return cancelledAt; }
         public void setCancelledAt(String cancelledAt) { this.cancelledAt = cancelledAt; }
+    }
+    
+    /**
+     * Amount 내부 클래스
+     */
+    public static class Amount {
+        private Long total;
+        private Long value;
+        private String currency;
+        
+        public Long getTotal() { return total; }
+        public void setTotal(Long total) { this.total = total; }
+        public Long getValue() { return value; }
+        public void setValue(Long value) { this.value = value; }
+        public String getCurrency() { return currency; }
+        public void setCurrency(String currency) { this.currency = currency; }
+        
+        // total 또는 value 중 하나를 반환
+        public Long getAmountValue() {
+            return total != null ? total : value;
+        }
     }
 }
 
