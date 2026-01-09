@@ -232,6 +232,14 @@ public class PaymentServiceImpl implements PaymentService {
             }
             
             for (CartItem cartItem : cartItems) {
+//                //상품 수량 차감
+//                Products product = cartItem.getProducts();
+//                int orderQuantity = cartItem.getQuantity();
+//
+//                // 상품 수량 차감
+//                product.decreaseQuantity(orderQuantity);
+//                productsfindRepository.save(product);
+
                 OrderItem orderItem = OrderItem.builder()
                         .orderItemId(IdGenerator.orderItemId())
                         .orders(order)
@@ -255,6 +263,12 @@ public class PaymentServiceImpl implements PaymentService {
             
             Products product = productsfindRepository.findById(confirmDTO.getProductId())
                     .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+
+//            int orderQuantity = confirmDTO.getQuantity();
+//
+//            // 상품 수량 차감
+//            product.decreaseQuantity(orderQuantity);
+//            productsfindRepository.save(product);
             
             OrderItem orderItem = OrderItem.builder()
                     .orderItemId(IdGenerator.orderItemId())

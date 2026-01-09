@@ -1,7 +1,6 @@
 package com.example.demo.domain.user.payments.repository;
 
 import com.example.demo.entity.OrderItem;
-import com.example.demo.entity.Orders;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -21,6 +20,13 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, String> {
 """)
     List<OrderItem> findWithProductsByOrderId(String  orderId);
 
+    @Query("""
+    SELECT oi.products.productsId, SUM(oi.quantity) as totalQuantity
+    FROM OrderItem oi
+    GROUP BY oi.products.productsId
+    ORDER BY totalQuantity DESC
+""")
+    List<Object[]> findTopProductsByOrderQuantity();
 
 }
 

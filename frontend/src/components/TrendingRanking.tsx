@@ -68,6 +68,8 @@ export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
   const [apiProducts, setApiProducts] = useState<ProductDetailDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [trendingProducts, setTrendingProducts] = useState<ProductDetailDTO[]>([]);
+  const [trendingLoading, setTrendingLoading] = useState(false);
  
   const categories = [
     // { id: 'all', name: '카테고리 전체' },
@@ -77,6 +79,34 @@ export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
     { id: 'dental', name: '덴탈껌' },
     { id: 'cookie', name: '쿠키' },
   ];
+
+  // 급상승 랭킹 데이터 가져오기 (주문량 기반)
+  useEffect(() => {
+    const fetchTrendingRanking = async () => {
+      try {
+        setTrendingLoading(true);
+        
+        const response = await apiClient.get<ProductDetailDTO[]>(
+          '/v1/user/trendingRanking',
+          { limit: 6 }
+        );
+
+        if (response.success && response.data) {
+          setTrendingProducts(response.data);
+        } else {
+          console.error('급상승 랭킹 조회 실패:', response.error);
+          setTrendingProducts([]);
+        }
+      } catch (err) {
+        console.error('급상승 랭킹 조회 실패:', err);
+        setTrendingProducts([]);
+      } finally {
+        setTrendingLoading(false);
+      }
+    };
+
+    fetchTrendingRanking();
+  }, []);
 
   // 카테고리별 랭킹 데이터 가져오기
   useEffect(() => {
@@ -109,16 +139,27 @@ export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
     fetchCategoryRanking();
   }, [selectedCategory]);
 
-  // 급상승 1위 제품
-  const topTrendingProduct = {
-    rank: 3,
-    change: '+2',
-    brand: '라비엘르',
-    name: '엔자임 오트 스크럽 파우더 워시',
-    rating: 4.49,
-    reviewCount: 569,
-    image: 'https://images.unsplash.com/photo-1604544203292-0daa7f847478?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjB0cmVhdHMlMjBzbmFja3N8ZW58MXx8fHwxNzY1ODU2MTY3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-  };
+  // 급상승 1위 제품 (API 데이터 사용)
+  const topTrendingProduct = trendingProducts.length > 0 
+    ? {
+        rank: 1,
+        change: '+1',
+        brand: trendingProducts[0].brand,
+        name: trendingProducts[0].name,
+        rating: 0,
+        reviewCount: 0,
+        image: getImageUrl(trendingProducts[0].imageUrl?.split(',')[0].trim() || ''),
+        productData: trendingProducts[0],
+      }
+    : {
+        rank: 3,
+        change: '+2',
+        brand: '라비엘르',
+        name: '엔자임 오트 스크럽 파우더 워시',
+        rating: 4.49,
+        reviewCount: 569,
+        image: 'https://images.unsplash.com/photo-1604544203292-0daa7f847478?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjB0cmVhdHMlMjBzbmFja3N8ZW58MXx8fHwxNzY1ODU2MTY3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
+      };
 
   // 카테고리별 랭킹 제품들
   const categoryProducts = {
@@ -414,42 +455,118 @@ export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
           <ChevronRight className="size-5 text-gray-400" />
         </div>
 
-        {/* 대표 제품 */}
-        <div 
-          onClick={() => onProductClick && onProductClick(convertToProduct(topTrendingProduct, 'trending-top'))}
-          className="bg-white rounded-lg border border-gray-200 p-4 relative cursor-pointer hover:shadow-lg transition-shadow"
-        >
-          <div className="absolute top-4 left-4 z-10">
-            <div className={`${getRankBadgeColor(topTrendingProduct.rank)} text-white size-10 rounded-full flex items-center justify-center`}>
-              {topTrendingProduct.rank}
-            </div>
-            <div className="text-center mt-1 text-xs text-red-500">
-              {topTrendingProduct.change}
-            </div>
-          </div>
+        {/* 로딩 상태 */}
+        {trendingLoading ? (
+          <div className="text-center py-8 text-gray-500">로딩 중...</div>
+        ) : (
+          <>
+            {/* 대표 제품 (1위) */}
+            {trendingProducts.length > 0 && (
+              <div 
+                onClick={() => {
+                  const firstProduct = trendingProducts[0];
+                  const firstImageUrl = firstProduct.imageUrl?.split(',')[0].trim() || '';
+                  const fullImageUrl = getImageUrl(firstImageUrl);
+                  const displayProduct: DisplayProduct = {
+                    rank: 1,
+                    change: '+1',
+                    brand: firstProduct.brand,
+                    name: firstProduct.name,
+                    rating: 0,
+                    reviewCount: 0,
+                    image: fullImageUrl,
+                    productData: firstProduct,
+                  };
+                  onProductClick && onProductClick(convertToProduct(displayProduct, firstProduct.productsId));
+                }}
+                className="bg-white rounded-lg border border-gray-200 p-4 relative cursor-pointer hover:shadow-lg transition-shadow mb-4"
+              >
+                <div className="absolute top-4 left-4 z-10">
+                  <div className={`${getRankBadgeColor(1)} text-white size-10 rounded-full flex items-center justify-center`}>
+                    1
+                  </div>
+                  <div className="text-center mt-1 text-xs text-red-500">
+                    +1
+                  </div>
+                </div>
 
-          <div className="flex gap-4 items-center">
-            <div className="w-32 h-32 shrink-0">
-              <ImageWithFallback
-                src={topTrendingProduct.image}
-                alt={topTrendingProduct.name}
-                className="w-full h-full object-cover rounded-lg"
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs text-gray-500 mb-1">{topTrendingProduct.brand}</div>
-              <h3 className="text-gray-900 mb-2 line-clamp-2">{topTrendingProduct.name}</h3>
-              <div className="flex items-center gap-1 text-sm">
-                <span className="text-orange-500">★</span>
-                <span>{topTrendingProduct.rating}</span>
-                <span className="text-gray-400">({topTrendingProduct.reviewCount.toLocaleString()})</span>
+                <div className="flex gap-4 items-center">
+                  <div className="w-32 h-32 shrink-0">
+                    <ImageWithFallback
+                      src={getImageUrl(trendingProducts[0].imageUrl?.split(',')[0].trim() || '')}
+                      alt={trendingProducts[0].name}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-gray-500 mb-1">{trendingProducts[0].brand}</div>
+                    <h3 className="text-gray-900 mb-2 line-clamp-2">{trendingProducts[0].name}</h3>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <span>{trendingProducts[0].price.toLocaleString()}원</span>
+                      {trendingProducts[0].size && <span>· {trendingProducts[0].size}g</span>}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="mt-2 bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded inline-block">
-                3/10
+            )}
+
+            {/* 급상승 랭킹 리스트 (2위부터 5개) */}
+            {trendingProducts.length > 1 && (
+              <div className="space-y-3">
+                {trendingProducts.slice(1, 6).map((product, index) => {
+                  const firstImageUrl = product.imageUrl?.split(',')[0].trim() || '';
+                  const fullImageUrl = getImageUrl(firstImageUrl);
+                  
+                  const displayProduct: DisplayProduct = {
+                    rank: index + 2,
+                    change: '0',
+                    brand: product.brand,
+                    name: product.name,
+                    rating: 0,
+                    reviewCount: 0,
+                    image: fullImageUrl,
+                    productData: product,
+                  };
+
+                  return (
+                    <div 
+                      key={product.productsId}
+                      onClick={() => onProductClick && onProductClick(convertToProduct(displayProduct, product.productsId))}
+                      className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 p-3 cursor-pointer hover:shadow-md transition-shadow"
+                    >
+                      <div className="shrink-0 relative">
+                        <div className={`${getRankBadgeColor(displayProduct.rank)} text-white size-8 rounded-full flex items-center justify-center text-sm`}>
+                          {displayProduct.rank}
+                        </div>
+                      </div>
+
+                      <div className="w-16 h-16 shrink-0">
+                        <ImageWithFallback
+                          src={fullImageUrl}
+                          alt={product.name}
+                          className="w-full h-full object-cover rounded"
+                        />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-gray-500">{product.brand}</div>
+                        <h4 className="text-sm text-gray-900 line-clamp-1 mb-1">{product.name}</h4>
+                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                          <span>{product.price.toLocaleString()}원</span>
+                          {product.size && <span>· {product.size}g</span>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-          </div>
-        </div>
+            )}
+
+            {trendingProducts.length === 0 && !trendingLoading && (
+              <div className="text-center py-8 text-gray-500">급상승 랭킹 데이터가 없습니다.</div>
+            )}
+          </>
+        )}
       </div>
 
       {/* 카테고리별 선택한 랭킹 */}

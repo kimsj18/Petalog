@@ -147,54 +147,54 @@ export function UserLoginPage() {
           </button>
 
           {/* 카카오 로그인 버튼 */}
-          <button
-            type="button"
-            onClick={handleKakaoLogin}
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 bg-yellow-500 text-white py-4 rounded-lg hover:bg-yellow-600 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed shadow-sm mt-3"
-          >
-            <span className="text-base">Kakao로 계속하기</span>
-          </button>
+          {/*<button*/}
+          {/*  type="button"*/}
+          {/*  onClick={handleKakaoLogin}*/}
+          {/*  disabled={isLoading}*/}
+          {/*  className="w-full flex items-center justify-center gap-3 bg-yellow-500 text-white py-4 rounded-lg hover:bg-yellow-600 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed shadow-sm mt-3"*/}
+          {/*>*/}
+          {/*  <span className="text-base">Kakao로 계속하기</span>*/}
+          {/*</button>*/}
 
           {/* 이메일 로그인 폼 */}
-          <form onSubmit={handleLogin} className="mt-6">
-            <div className="mb-4">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                이메일
-              </label>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                required
-                disabled={isLoading}
-              />
-            </div>
-            <div className="mb-4">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                비밀번호
-              </label>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                required
-                disabled={isLoading}
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full flex items-center justify-center gap-3 bg-blue-500 text-white py-4 rounded-lg hover:bg-blue-600 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed shadow-sm"
-            >
-              <Lock className="size-5" />
-              <span className="text-base">{isLoading ? '로그인 중...' : '로그인'}</span>
-            </button>
-          </form>
+          {/*<form onSubmit={handleLogin} className="mt-6">*/}
+          {/*  <div className="mb-4">*/}
+          {/*    <label htmlFor="email" className="block text-sm font-medium text-gray-700">*/}
+          {/*      이메일*/}
+          {/*    </label>*/}
+          {/*    <input*/}
+          {/*      type="email"*/}
+          {/*      id="email"*/}
+          {/*      value={email}*/}
+          {/*      onChange={(e) => setEmail(e.target.value)}*/}
+          {/*      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"*/}
+          {/*      required*/}
+          {/*      disabled={isLoading}*/}
+          {/*    />*/}
+          {/*  </div>*/}
+          {/*  <div className="mb-4">*/}
+          {/*    <label htmlFor="password" className="block text-sm font-medium text-gray-700">*/}
+          {/*      비밀번호*/}
+          {/*    </label>*/}
+          {/*    <input*/}
+          {/*      type="password"*/}
+          {/*      id="password"*/}
+          {/*      value={password}*/}
+          {/*      onChange={(e) => setPassword(e.target.value)}*/}
+          {/*      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"*/}
+          {/*      required*/}
+          {/*      disabled={isLoading}*/}
+          {/*    />*/}
+          {/*  </div>*/}
+          {/*  <button*/}
+          {/*    type="submit"*/}
+          {/*    disabled={isLoading}*/}
+          {/*    className="w-full flex items-center justify-center gap-3 bg-blue-500 text-white py-4 rounded-lg hover:bg-blue-600 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed shadow-sm"*/}
+          {/*  >*/}
+          {/*    <Lock className="size-5" />*/}
+          {/*    <span className="text-base">{isLoading ? '로그인 중...' : '로그인'}</span>*/}
+          {/*  </button>*/}
+          {/*</form>*/}
 
           {/* 안내 메시지 */}
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">

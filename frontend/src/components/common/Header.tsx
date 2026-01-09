@@ -44,6 +44,24 @@ export function Header() {
     router.push('/');
   };
 
+  // 마이페이지 클릭 핸들러
+  const handleMyPageClick = () => {
+    if (!isAuthenticated) {
+      router.push('/login');
+    } else {
+      router.push('/user/mypage');
+    }
+  };
+
+  // 결제 내역 클릭 핸들러
+  const handleOrderHistoryClick = () => {
+    if (!isAuthenticated) {
+      router.push('/login');
+    } else {
+      router.push('/user/orderHistory');
+    }
+  };
+
   return (
     <header className="bg-white sticky top-0 z-40">
       <div className="max-w-6xl mx-auto px-4 border-b border-gray-200">
@@ -70,68 +88,71 @@ export function Header() {
                 </span>
               )}
             </button>
-            <button
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              {isMenuOpen ? (
-                <X className="size-5 text-gray-700" />
-              ) : (
-                <Menu className="size-5 text-gray-700" />
-              )}
-            </button>
+            {isAuthenticated ? (
+              <button
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+              >
+                {isMenuOpen ? (
+                  <X className="size-5 text-gray-700" />
+                ) : (
+                  <Menu className="size-5 text-gray-700" />
+                )}
+              </button>
+            ) : (
+              <button
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"
+                onClick={handleLoginClick}
+              >
+                <User className="size-5" />
+                <span>로그인</span>
+              </button>
+            )}
           </div>
         </div>
 
         {/* Mobile Menu */}
         {isMenuOpen && (
           <nav className="border-t border-gray-200 py-4 space-y-2">
-            <a
-              href="../../user/mypage"
-              className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
-            >
-              마이페이지
-            </a>
-            <a
-              href="../../user/orderHistory"
-              className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
-            >
-              결제 내역
-            </a>
-            {/*<a*/}
-            {/*  href="#"*/}
-            {/*  className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"*/}
-            {/*>*/}
-            {/*  가격 분석*/}
-            {/*</a>*/}
-            {/*<a*/}
-            {/*  href="#"*/}
-            {/*  className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"*/}
-            {/*>*/}
-            {/*  리뷰*/}
-            {/*</a>*/}
-            {isAuthenticated && user && (
-              <div className="border-t border-gray-200 py-2">
-                <div className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg">
-                  <User className="size-5" />
-                  <span>{user.user_email}</span>
-                </div>
+            {isAuthenticated ? (
+              <>
                 <button
-                  className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
-                  onClick={handleLogout}
+                  onClick={handleMyPageClick}
+                  className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
                 >
-                  <LogOut className="size-5" />
-                  로그아웃
+                  마이페이지
                 </button>
-              </div>
-            )}
-            {!isAuthenticated && (
+                <button
+                  onClick={handleOrderHistoryClick}
+                  className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
+                >
+                  결제 내역
+                </button>
+                <div className="border-t border-gray-200 py-2">
+                  <div className="flex items-center gap-2 px-4 py-2 text-gray-700">
+                    <User className="size-5" />
+                    <span>{user?.user_name}</span>
+                  </div>
+                  <button
+                    className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
+                    onClick={handleLogout}
+                  >
+                    <div className="flex items-center gap-2">
+                      <LogOut className="size-5" />
+                      <span>로그아웃</span>
+                    </div>
+                  </button>
+                </div>
+              </>
+            ) : (
               <button
-                className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
+                className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
                 onClick={handleLoginClick}
               >
-                <User className="size-5" />
-                로그인
+                <div className="flex items-center gap-2">
+                  <User className="size-5" />
+                  <span>로그인</span>
+                </div>
               </button>
             )}
           </nav>

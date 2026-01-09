@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, AlertCircle, ArrowLeft, Shield } from 'lucide-react';
 import {useRouter} from "next/navigation";
+import { useAuthStore } from '@/stores/authStore';
 
 interface AdminLoginPageProps {
   onSwitchToUserLogin?: () => void;
@@ -13,7 +14,8 @@ export function AdminLoginPage({ onSwitchToUserLogin }: AdminLoginPageProps = {}
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter()
+  const router = useRouter();
+  const { login } = useAuthStore();
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,32 +35,37 @@ export function AdminLoginPage({ onSwitchToUserLogin }: AdminLoginPageProps = {}
       return;
     }
 
-    if (password.length < 6) {
-      setError('비밀번호는 6자 이상이어야 합니다.');
+    if (password.length < 4) {
+      setError('비밀번호는 4자 이상이어야 합니다.');
       setIsLoading(false);
       return;
     }
 
-    // TODO: 실제 관리자 로그인 API 호출
-    // import { login } from '../services/auth';
-    // const response = await login({ email, password });
-    // if (response.success && response.data?.user.isAdmin) {
-    //   onLogin(email);
-    // } else {
-    //   setError('관리자 권한이 없습니다.');
-    // }
+    try {
+      // 실제 로그인 API 호출
+      await login({
+        username: email,
+        password: password,
+      });
 
-    // Mock 처리 - 관리자 계정 체크
-    setTimeout(() => {
-      if (email === 'admin@dogsnack.com' && password === 'admin123') {
-        console.log('관리자 로그인 성공:', email);
-        // onLogin(email);
+      // 로그인 성공 후 userRole 확인
+      const userRole = useAuthStore.getState().user?.userRole;
+      
+      if (userRole === 'ADMIN') {
+        // 관리자 권한이 있으면 관리자 페이지로 이동
         router.push('/admin');
       } else {
-        setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+        // 관리자 권한이 없으면 로그아웃하고 에러 표시
+        await useAuthStore.getState().logout();
+        setError('관리자 권한이 없습니다.');
+        setIsLoading(false);
       }
+    } catch (error) {
+      // 로그인 실패
+      const errorMessage = error instanceof Error ? error.message : '로그인에 실패했습니다.';
+      setError(errorMessage);
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (

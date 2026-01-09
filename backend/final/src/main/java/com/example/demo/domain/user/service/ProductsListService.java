@@ -14,4 +14,6 @@ public interface ProductsListService {
     List<ProductDetailDTO> findAllWithIngredient(String ingredient);
 
     List<ProductDetailDTO> searchByNameOrBrand(String keyword);
+
+    List<ProductDetailDTO> findTopProductsByOrderQuantity(int limit);
 }

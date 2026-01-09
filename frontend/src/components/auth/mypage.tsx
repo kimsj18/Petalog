@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api';
+import {useAuthStore} from "@/stores/authStore";
+import {useRouter} from "next/navigation";
 
 interface AddressFormData {
   recipient_name: string;
@@ -55,8 +57,11 @@ export function MyPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [hasExistingAddress, setHasExistingAddress] = useState(false);
 
+
   // 다음 우편번호 API 스크립트 로드
   React.useEffect(() => {
+
+
     const script = document.createElement('script');
     script.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
     script.async = true;
@@ -71,6 +76,8 @@ export function MyPage() {
 
   // 주소 조회
   useEffect(() => {
+
+
     const loadAddress = async () => {
       setIsLoading(true);
       try {
@@ -101,10 +108,10 @@ export function MyPage() {
 
   // 우편번호 검색
   const handleSearchAddress = () => {
-    if (!window.daum) {
-      alert('주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
-      return;
-    }
+    // if (!window.daum) {
+    //   alert('주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+    //   return;
+    // }
 
     new window.daum.Postcode({
       oncomplete: (data) => {

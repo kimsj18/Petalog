@@ -41,6 +41,14 @@ public class JWTFilter extends OncePerRequestFilter {
             return true;
         }
 
+
+        if(path.startsWith("/api/v1/user/categoryList") ||
+        path.startsWith("/api/v1/user/productDetail") ||
+        path.startsWith("/api/v1/user/productList") ||
+        path.startsWith("/api/v1/user/trendingRanking")){
+         return true;
+     }
+
         return false;
     }
 

@@ -61,6 +61,16 @@ public class Products {
     @OneToMany(mappedBy = "products", fetch = FetchType.LAZY)
     private List<CartItem> cartItem;
 
+    /**
+     * 상품 수량 차감
+     */
+    public void decreaseQuantity(int amount) {
+        if (this.quantity < amount) {
+            throw new IllegalArgumentException("상품 수량이 부족합니다. 현재 수량: " + this.quantity + ", 요청 수량: " + amount);
+        }
+        this.quantity -= amount;
+    }
+
     @Override
     public String toString() {
         return "Products{" +
