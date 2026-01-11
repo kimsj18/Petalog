@@ -2,7 +2,7 @@
 
 import * as process from "process";
 
-const API_BASE_URL = process.env.API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = process.env.API_URL || 'http://petalog-env.eba-wh52m2mm.us-east-1.elasticbeanstalk.com/api';
 
 // API 응답 타입
 export interface ApiResponse<T> {

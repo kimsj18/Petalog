@@ -53,7 +53,7 @@ export function OrderHistory() {
         hour: '2-digit',
         minute: '2-digit',
       });
-    } catch (err) {
+    } catch {
       return dateString;
     }
   };
@@ -85,12 +85,13 @@ export function OrderHistory() {
     }
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedOrder(null);
-    setOrderItems([]);
-    setItemsError(null);
-  };
+  // handleCloseModal은 Dialog의 onOpenChange로 직접 처리되므로 사용하지 않음
+  // const handleCloseModal = () => {
+  //   setIsModalOpen(false);
+  //   setSelectedOrder(null);
+  //   setOrderItems([]);
+  //   setItemsError(null);
+  // };
 
   if (loading) {
     return (

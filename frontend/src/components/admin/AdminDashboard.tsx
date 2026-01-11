@@ -11,7 +11,6 @@ import {
   LogOut
 } from 'lucide-react';
 import { AdminDashboardDTO, orderService } from '@/services';
-import { escape } from 'querystring';
 
 export function AdminDashboard() {
   const router = useRouter();
@@ -22,7 +21,9 @@ export function AdminDashboard() {
     totalUsers: 0,
     totalRevenue: 0
   })
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState<string | null>(null);
 
 

@@ -7,7 +7,6 @@ export const dynamic = 'force-dynamic';
 import { CheckoutPage } from "@/components/CheckoutPage";
 import { cartService } from "@/services/cartService";
 import { apiClient } from "@/lib/api";
-import { CartItemListDTO } from "@/types";
 
 // 백엔드 응답 타입
 interface ProductDetailResponse {

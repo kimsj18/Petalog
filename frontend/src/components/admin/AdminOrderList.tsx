@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Search, Eye, Package } from 'lucide-react';
+import { ArrowLeft, Search, Package } from 'lucide-react';
 import { orderService, AdminOrderDTO, OrderItemDTO } from '@/services/orderService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
@@ -92,7 +92,7 @@ export function AdminOrderList() {
         hour: '2-digit',
         minute: '2-digit',
       });
-    } catch (err) {
+    } catch {
       return dateString;
     }
   };
@@ -139,7 +139,7 @@ export function AdminOrderList() {
         month: '2-digit',
         day: '2-digit',
       });
-    } catch (err) {
+    } catch {
       return dateString;
     }
   };

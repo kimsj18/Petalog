@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api';
-import {useAuthStore} from "@/stores/authStore";
-import {useRouter} from "next/navigation";
 
 interface AddressFormData {
   recipient_name: string;
