@@ -280,6 +280,7 @@ export function CheckoutPage({
         totalAmount: finalAmount,
         currency: 'KRW',
         payMethod: 'CARD',
+        redirectUrl: window.location.origin + '/checkout?payment=success', // 모바일 리디렉션을 위한 URL
         customData: {
           orderNumber,
           type,

@@ -7,6 +7,7 @@ import com.example.demo.domain.admin.repository.ProductsRepository;
 import com.example.demo.entity.Ingredients;
 import com.example.demo.entity.ProductBenefit;
 import com.example.demo.entity.Products;
+import com.example.demo.service.S3Service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class AdminProductService {
     private final IngredientsRepository ingredientsRepository;
     private final ProductBenefitRepository productBenefitRepository;
     private final ObjectMapper objectMapper;
+    private final S3Service s3Service;
 
     // 이미지 저장 경로 (application.properties에서 설정 가능)
     private static final String UPLOAD_DIR = "uploads/products/";
@@ -83,37 +85,41 @@ public class AdminProductService {
 
     // 이미지 파일 저장
     public List<String> saveImages(List<MultipartFile> images) throws IOException {
-        List<String> imageUrls = new ArrayList<>();
-        
-        if (images == null || images.isEmpty()) {
-            return imageUrls;
-        }
-
-        // 업로드 디렉토리 생성
-        Path uploadPath = Paths.get(UPLOAD_DIR);
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
-        }
-
-        for (MultipartFile image : images) {
-            if (!image.isEmpty()) {
-                String originalFilename = image.getOriginalFilename();
-                String extension = originalFilename != null && originalFilename.contains(".") 
-                    ? originalFilename.substring(originalFilename.lastIndexOf(".")) 
-                    : "";
-                String savedFilename = UUID.randomUUID().toString() + extension;
-                Path filePath = uploadPath.resolve(savedFilename);
-                
-                Files.copy(image.getInputStream(), filePath);
-                
-                // URL 생성 (실제 환경에서는 서버 URL 포함)
-                String imageUrl = "/" + UPLOAD_DIR + savedFilename;
-                imageUrls.add(imageUrl);
-            }
-        }
-
-        return imageUrls;
+        return s3Service.uploadImages(images);
     }
+
+//    public List<String> saveImages(List<MultipartFile> images) throws IOException {
+//        List<String> imageUrls = new ArrayList<>();
+//
+//        if (images == null || images.isEmpty()) {
+//            return imageUrls;
+//        }
+//
+//        // 업로드 디렉토리 생성
+//        Path uploadPath = Paths.get(UPLOAD_DIR);
+//        if (!Files.exists(uploadPath)) {
+//            Files.createDirectories(uploadPath);
+//        }
+//
+//        for (MultipartFile image : images) {
+//            if (!image.isEmpty()) {
+//                String originalFilename = image.getOriginalFilename();
+//                String extension = originalFilename != null && originalFilename.contains(".")
+//                    ? originalFilename.substring(originalFilename.lastIndexOf("."))
+//                    : "";
+//                String savedFilename = UUID.randomUUID().toString() + extension;
+//                Path filePath = uploadPath.resolve(savedFilename);
+//
+//                Files.copy(image.getInputStream(), filePath);
+//
+//                // URL 생성 (실제 환경에서는 서버 URL 포함)
+//                String imageUrl = "/" + UPLOAD_DIR + savedFilename;
+//                imageUrls.add(imageUrl);
+//            }
+//        }
+//
+//        return imageUrls;
+//    }
 
 
 

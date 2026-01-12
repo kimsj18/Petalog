@@ -1,6 +1,7 @@
 package com.example.demo.domain.oAuth.repository;
 
 import com.example.demo.entity.User;
+import com.example.demo.util.IdGenerator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,14 +25,14 @@ class OAuthRepositoryTest {
     public void InsertUserTest(){
 
         User user = User.builder()
-                .userId("user"+UUID.randomUUID().toString())
-                .userEmail("ddd@ddd.com")
-                .userName("ddd")
-                .userPhone("01022223333")
+                .userId(IdGenerator.userId())
+                .userEmail("admin123")
+                .userName("관리자")
+                .userPhone("01012341234")
                 .userEnterDay(LocalDate.now())
                 .userStatus(1)
-                .userPassword(passwordEncoder.encode("1234"))
-                .userRole("USER")
+                .userPassword(passwordEncoder.encode("admin123"))
+                .userRole("ADMIN")
                 .build();
 
         oAuthRepository.save(user);

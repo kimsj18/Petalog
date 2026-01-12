@@ -24,13 +24,7 @@ export function AdminLoginPage({ onSwitchToUserLogin }: AdminLoginPageProps = {}
 
     // 유효성 검사
     if (!email || !password) {
-      setError('이메일과 비밀번호를 입력해주세요.');
-      setIsLoading(false);
-      return;
-    }
-
-    if (!email.includes('@')) {
-      setError('올바른 이메일 주소를 입력해주세요.');
+      setError('아이디와 비밀번호를 입력해주세요.');
       setIsLoading(false);
       return;
     }
@@ -87,7 +81,7 @@ export function AdminLoginPage({ onSwitchToUserLogin }: AdminLoginPageProps = {}
             <Shield className="size-8 text-white" />
           </div>
           <h1 className="text-white text-3xl mb-2">관리자 로그인</h1>
-          <p className="text-blue-200">멍간식 관리 시스템</p>
+          <p className="text-blue-200">펫탈로그 관리 시스템</p>
         </div>
 
         {/* 로그인 카드 */}
@@ -107,19 +101,19 @@ export function AdminLoginPage({ onSwitchToUserLogin }: AdminLoginPageProps = {}
 
           {/* 로그인 폼 */}
           <form onSubmit={handleAdminLogin} className="space-y-4">
-            {/* 이메일 입력 */}
+            {/* 아이디 입력 */}
             <div>
               <label htmlFor="admin-email" className="block text-sm text-gray-700 mb-2">
-                관리자 이메일
+                관리자 아이디
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
                 <input
                   id="admin-email"
-                  type="email"
+                  type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@dogsnack.com"
+                  placeholder="admin123"
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   disabled={isLoading}
                   autoComplete="email"
@@ -161,17 +155,17 @@ export function AdminLoginPage({ onSwitchToUserLogin }: AdminLoginPageProps = {}
           <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-xs text-yellow-800 text-center">
               ⚠️ 이 페이지는 관리자 전용입니다.<br />
-              테스트 계정: admin@dogsnack.com / admin123
+              테스트 계정: admin123 / admin123
             </p>
           </div>
         </div>
 
         {/* 보안 안내 */}
-        <div className="mt-6 text-center">
-          <p className="text-xs text-blue-200">
-            🔒 모든 통신은 암호화되어 안전하게 보호됩니다
-          </p>
-        </div>
+        {/*<div className="mt-6 text-center">*/}
+        {/*  <p className="text-xs text-blue-200">*/}
+        {/*    🔒 모든 통신은 암호화되어 안전하게 보호됩니다*/}
+        {/*  </p>*/}
+        {/*</div>*/}
       </div>
     </div>
   );

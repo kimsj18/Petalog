@@ -2,13 +2,15 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Lock } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import {useGoogleLogin} from "@react-oauth/google";
 
 export function UserLoginPage() {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [email, setEmail] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [password, setPassword] = useState('');
   const { login, oauthLogin, isLoading } = useAuthStore();
 
@@ -16,6 +18,7 @@ export function UserLoginPage() {
     router.back();
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -78,6 +81,7 @@ export function UserLoginPage() {
     googleLogin();
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleKakaoLogin = async () => {
     try {
       // TODO: Kakao OAuth 실제 구현 필요 - accessToken을 실제로 받아와야 함

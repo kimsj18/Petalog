@@ -9,6 +9,7 @@ import com.example.demo.entity.Products;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -169,6 +170,13 @@ class ProductsListRepositoryTest {
             System.out.println(result);
         }
     }
+
+
+
+        public static void main(String[] args) {
+            BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+            System.out.println(encoder.encode("admin123"));
+        }
 
 
 }

@@ -139,27 +139,27 @@ export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
     fetchCategoryRanking();
   }, [selectedCategory]);
 
-  // 급상승 1위 제품 (API 데이터 사용)
-  const topTrendingProduct = trendingProducts.length > 0 
-    ? {
-        rank: 1,
-        change: '+1',
-        brand: trendingProducts[0].brand,
-        name: trendingProducts[0].name,
-        rating: 0,
-        reviewCount: 0,
-        image: getImageUrl(trendingProducts[0].imageUrl?.split(',')[0].trim() || ''),
-        productData: trendingProducts[0],
-      }
-    : {
-        rank: 3,
-        change: '+2',
-        brand: '라비엘르',
-        name: '엔자임 오트 스크럽 파우더 워시',
-        rating: 4.49,
-        reviewCount: 569,
-        image: 'https://images.unsplash.com/photo-1604544203292-0daa7f847478?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjB0cmVhdHMlMjBzbmFja3N8ZW58MXx8fHwxNzY1ODU2MTY3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-      };
+  // 급상승 1위 제품 (API 데이터 사용) - 사용하지 않아 주석 처리
+  // const topTrendingProduct = trendingProducts.length > 0 
+  //   ? {
+  //       rank: 1,
+  //       change: '+1',
+  //       brand: trendingProducts[0].brand,
+  //       name: trendingProducts[0].name,
+  //       rating: 0,
+  //       reviewCount: 0,
+  //       image: getImageUrl(trendingProducts[0].imageUrl?.split(',')[0].trim() || ''),
+  //       productData: trendingProducts[0],
+  //     }
+  //   : {
+  //       rank: 3,
+  //       change: '+2',
+  //       brand: '라비엘르',
+  //       name: '엔자임 오트 스크럽 파우더 워시',
+  //       rating: 4.49,
+  //       reviewCount: 569,
+  //       image: 'https://images.unsplash.com/photo-1604544203292-0daa7f847478?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2clMjB0cmVhdHMlMjBzbmFja3N8ZW58MXx8fHwxNzY1ODU2MTY3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
+  //     };
 
   // 카테고리별 랭킹 제품들
   const categoryProducts = {
@@ -477,7 +477,9 @@ export function TrendingRanking({ onProductClick }: TrendingRankingProps) {
                     image: fullImageUrl,
                     productData: firstProduct,
                   };
-                  onProductClick && onProductClick(convertToProduct(displayProduct, firstProduct.productsId));
+                  if (onProductClick) {
+                    onProductClick(convertToProduct(displayProduct, firstProduct.productsId));
+                  }
                 }}
                 className="bg-white rounded-lg border border-gray-200 p-4 relative cursor-pointer hover:shadow-lg transition-shadow mb-4"
               >
