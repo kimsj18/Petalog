@@ -100,8 +100,8 @@ function CheckoutRouteContent() {
   };
 
   const handlePaymentSuccess = () => {
-    // 결제 성공 후 홈으로 리다이렉트
-    router.push('/');
+    // 결제 성공 후 주문 내역 페이지로 리다이렉트
+    router.push('/user/orderHistory');
   };
 
   if (loading) {

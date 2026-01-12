@@ -163,38 +163,38 @@ const fetchDashboard = async () => {
         </div>
 
         {/* 최근 활동 (임시) */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg text-gray-900 mb-4">최근 활동</h2>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div>
-                <p className="text-sm text-gray-900">새로운 주문</p>
-                <p className="text-xs text-gray-500">5분 전</p>
-              </div>
-              <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
-                주문 #89
-              </span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div>
-                <p className="text-sm text-gray-900">상품 재고 부족</p>
-                <p className="text-xs text-gray-500">1시간 전</p>
-              </div>
-              <span className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded">
-                닭가슴살 큐브
-              </span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div>
-                <p className="text-sm text-gray-900">새로운 리뷰</p>
-                <p className="text-xs text-gray-500">2시간 전</p>
-              </div>
-              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                ★★★★★
-              </span>
-            </div>
-          </div>
-        </div>
+        {/*<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">*/}
+        {/*  <h2 className="text-lg text-gray-900 mb-4">최근 활동</h2>*/}
+        {/*  <div className="space-y-3">*/}
+        {/*    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">*/}
+        {/*      <div>*/}
+        {/*        <p className="text-sm text-gray-900">새로운 주문</p>*/}
+        {/*        <p className="text-xs text-gray-500">5분 전</p>*/}
+        {/*      </div>*/}
+        {/*      <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">*/}
+        {/*        주문 #89*/}
+        {/*      </span>*/}
+        {/*    </div>*/}
+        {/*    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">*/}
+        {/*      <div>*/}
+        {/*        <p className="text-sm text-gray-900">상품 재고 부족</p>*/}
+        {/*        <p className="text-xs text-gray-500">1시간 전</p>*/}
+        {/*      </div>*/}
+        {/*      <span className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded">*/}
+        {/*        닭가슴살 큐브*/}
+        {/*      </span>*/}
+        {/*    </div>*/}
+        {/*    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">*/}
+        {/*      <div>*/}
+        {/*        <p className="text-sm text-gray-900">새로운 리뷰</p>*/}
+        {/*        <p className="text-xs text-gray-500">2시간 전</p>*/}
+        {/*      </div>*/}
+        {/*      <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">*/}
+        {/*        ★★★★★*/}
+        {/*      </span>*/}
+        {/*    </div>*/}
+        {/*  </div>*/}
+        {/*</div>*/}
       </main>
     </div>
   );

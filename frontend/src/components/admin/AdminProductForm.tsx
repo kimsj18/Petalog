@@ -149,7 +149,6 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
   };
 
   // 드롭다운 옵션들
-  const brands = ['네츄럴코어', '오리젠', '그리니스', '덴티베이트', '하림펫푸드', '기타'];
   const categories = [
     { id: 'treat', name: '트릿/큐브', icon: '🦴' },
     { id: 'jerky', name: '육포/저키', icon: '🥩' },
@@ -488,18 +487,15 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
                 <label htmlFor="brand" className="block text-sm text-gray-700 mb-2">
                   브랜드 <span className="text-red-500">*</span>
                 </label>
-                <select
+                <input
+                  type="text"
                   id="brand"
                   name="brand"
                   value={formData.brand}
                   onChange={handleChange}
+                  placeholder="예: 로얄캐닌"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">선택해주세요</option>
-                  {brands.map(brand => (
-                    <option key={brand} value={brand}>{brand}</option>
-                  ))}
-                </select>
+                />
               </div>
 
               {/* 카테고리 */}
@@ -836,10 +832,10 @@ export function AdminProductForm({ mode, productId }: AdminProductFormProps) {
           <div className="flex gap-3 pt-4">
             <button
               type="button"
-              onClick={handlePreview}
+              onClick={() => router.back()}
               className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              미리보기
+              취소
             </button>
             <button
               type="submit"
